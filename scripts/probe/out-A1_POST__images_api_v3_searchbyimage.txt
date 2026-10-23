@@ -1,0 +1,10 @@
+STATUS 400
+HEADERS {
+ "content-length": "0",
+ "x-eventid": "6adba79974bd4bd7a90d584000cb0863",
+ "date": "Fri, 23 Oct 2026 18:29:45 GMT",
+ "connection": "close",
+ "alt-svc": "h3=\":443\"; ma=93600",
+ "x-cdn-traceid": "0.04283417.1792780185.94a88f51"
+}
+

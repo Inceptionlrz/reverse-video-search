@@ -1,0 +1,36 @@
+STATUS 302
+HEADERS {
+ "content-length": "136",
+ "content-type": "text/html; charset=utf-8",
+ "cache-control": "no-cache, no-store, must-revalidate",
+ "expires": "-1",
+ "location": "/images?FORM=SBIVSP",
+ "pragma": "no-cache",
+ "x-eventid": "6adba79a12c9407a826744192b7be026",
+ "useragentreductionoptout": "A7kgTC5xdZ2WIVGZEfb1hUoNuvjzOZX3VIV/BA6C18kQOOF50Q0D3oWoAm49k3BQImkujKILc7JmPysWk3CSjwUAAACMeyJvcmlnaW4iOiJodHRwczovL3d3dy5iaW5nLmNvbTo0NDMiLCJmZWF0dXJlIjoiU2VuZEZ1bGxVc2VyQWdlbnRBZnRlclJlZHVjdGlvbiIsImV4cGlyeSI6MTY4NDg4NjM5OSwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=",
+ "permissions-policy": "unload=()",
+ "content-security-policy": "script-src https: 'strict-dynamic' 'report-sample' 'wasm-unsafe-eval' 'nonce-D9nZFXRqj/ySdqStwMUy72jGAqIesdwHn8sw0GE0Kxc='; base-uri 'self';report-to csp-endpoint",
+ "report-to": "{\"group\":\"csp-endpoint\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://aefd.nelreports.net/api/report?cat=bingcsp\"}]}",
+ "p3p": "CP=\"NON UNI COM NAV STA LOC CURa DEVa PSAa PSDa OUR IND\"",
+ "bingapis-traceid": "6adba79a12c9407a826744192b7be026",
+ "date": "Fri, 23 Oct 2026 18:29:47 GMT",
+ "connection": "close",
+ "set-cookie": [
+  "MUID=111A4AAFEF356D012DE35D54EECC6CF9; domain=.bing.com; expires=Wed, 17-Nov-2027 18:29:46 GMT; path=/; secure; SameSite=None",
+  "MUIDB=111A4AAFEF356D012DE35D54EECC6CF9; expires=Wed, 17-Nov-2027 18:29:46 GMT; path=/; HttpOnly",
+  "_EDGE_S=F=1&SID=3AD9472A71766FC720B950D1708F6EEF; domain=.bing.com; path=/; HttpOnly",
+  "_EDGE_V=1; domain=.bing.com; expires=Wed, 17-Nov-2027 18:29:46 GMT; path=/; HttpOnly",
+  "__Host-XY=CfDJ8Pj64jZaZ_RFrelrus2TRAD_GRE-FC1CrjD7letAO3gW3_GELCCEXsDnT5zl7Cl2ZggPnLiW1hmXfTRIIbEd_gnteHx0nQQ-5pyj5QD6eAQ3a2XxYMpyO9hIsVAb_H2_3rYmdAicgbCog7R2xB8VqSeQRX1hy6tV1BAaZY9j4u2EPhN55eOz3vhjFgVXUBEKolXMwAlzET0b-nrk3UveFmoawR95n0Tyq2noiY6P-AwVBkHeQw2_TdNHaBbpo3JrL1wTW1MkJf-gcpK3W00QdLM; expires=Sun, 25-Oct-2026 01:29:46 GMT; path=/; secure; HttpOnly; SameSite=Lax",
+  "SRCHD=AF=SBIVSP; domain=.bing.com; expires=Mon, 23-Oct-2028 18:29:46 GMT; path=/; secure; SameSite=None",
+  "SRCHUID=V=2&GUID=5740C81B65D244F4A6FD54A18BF222D2&dmnchg=1; domain=.bing.com; expires=Mon, 23-Oct-2028 18:29:46 GMT; path=/; secure; SameSite=None",
+  "SRCHUSR=DOB=20261023; domain=.bing.com; expires=Mon, 23-Oct-2028 18:29:46 GMT; path=/; secure; SameSite=None",
+  "SRCHHPGUSR=SRCHLANG=en&IG=A8ABFC12F0F14A5EBC40C81BE900739B; domain=.bing.com; expires=Mon, 23-Oct-2028 18:29:46 GMT; path=/; secure; SameSite=None",
+  "_SS=SID=3AD9472A71766FC720B950D1708F6EEF; domain=.bing.com; path=/; secure; SameSite=None"
+ ],
+ "alt-svc": "h3=\":443\"; ma=93600",
+ "x-cdn-traceid": "0.0bac3017.1792780186.c0959479"
+}
+
+<html><head><title>Object moved</title></head><body>
+<h2>Object moved to <a href="/images?FORM=SBIVSP">here</a>.</h2>
+</body></html>

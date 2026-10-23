@@ -1,0 +1,20 @@
+{
+  "name": "reverse-video-search",
+  "version": "1.0.0",
+  "private": true,
+  "description": "本地版反向视频搜索：抽帧 + 多引擎以图搜图 + 透明降级（零 npm 运行时依赖）",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node --experimental-sqlite server/bin/rvs.mjs",
+    "start:win": "start.bat",
+    "stop:win": "stop.bat",
+    "smoke": "node --experimental-sqlite scripts/smoke.mjs",
+    "test": "node --experimental-sqlite --test tests/",
+    "check": "node --check server/app.mjs && node --check server/bin/rvs.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

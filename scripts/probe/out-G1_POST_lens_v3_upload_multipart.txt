@@ -1,0 +1,29 @@
+STATUS 303
+HEADERS {
+ "content-type": "application/binary",
+ "vary": "Origin",
+ "access-control-allow-origin": "https://lens.google.com",
+ "access-control-allow-credentials": "true",
+ "x-frame-options": "DENY",
+ "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+ "pragma": "no-cache",
+ "expires": "Mon, 01 Jan 1990 00:00:00 GMT",
+ "date": "Fri, 23 Oct 2026 18:38:06 GMT",
+ "location": "https://www.google.com/search?vsrid=CJWWgfuWqP_hVBACGAEiJDA4Nzg0NDkzLTU2NmYtNDUyOC05OTFlLWY2YjVjMGQ4MDNlZDKBASICc28oZEJzCi5sZmUtZHVtbXk6NzZhNDI1M2QtYjA1MS00MzBlLThmN2ItOTkwYTA0NmZiOTVmEkEKPy9ibnMvc28vYm9yZy9zby9ibnMvbGVucy1mcm9udGVuZC1hcGkvcHJvZC5sZW5zLWZyb250ZW5kLWFwaS82MFoECgJzbzjLpum_5NCXAw&vsint=CAIqDAoCCAcSAggKGAEgATojChYNAAAAPxUAAAA_HQAAgD8lAACAPzABEIAFGPIIJQAAgD8&udm=26&lns_mode=un&source=lns.web.ukn&vsdim=640,1138&gsessionid=r1-b4VNt7mE-aq7Mz6nCWVac8AWHfe9FiY7Ap-4c_drkJNT1DvPF_g&lsessionid=vQ9kiL7Xf8o6njTT7sgYwvmh7xnQgO4kWsB0U9bXzxbMzMAuwhIYkg&lns_surface=26&lns_vfs=e",
+ "p3p": "CP=\"This is not a P3P policy! See g.co/p3phelp for more info.\"",
+ "accept-ch": "Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Full-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model, Sec-CH-UA-WoW64, Sec-CH-UA-Form-Factors, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version",
+ "permissions-policy": "ch-ua-arch=*, ch-ua-bitness=*, ch-ua-full-version=*, ch-ua-full-version-list=*, ch-ua-model=*, ch-ua-wow64=*, ch-ua-form-factors=*, ch-ua-platform=*, ch-ua-platform-version=*",
+ "cross-origin-opener-policy": "same-origin",
+ "content-security-policy": "script-src 'report-sample' 'nonce-Z5YfUSCrjlx_2hUc5MqMxw' 'unsafe-inline';object-src 'none';base-uri 'self';report-uri /_/LensWebStandaloneUi/cspreport;worker-src 'self', script-src 'unsafe-inline' 'unsafe-eval' blob: data: 'self' https://apis.google.com https://ssl.gstatic.com https://www.google.com https://www.googletagmanager.com https://www.gstatic.com https://www.google-analytics.com https://www.googleapis.com/appsmarket/v2/installedApps/;report-uri /_/LensWebStandaloneUi/cspreport/allowlist, require-trusted-types-for 'script';report-uri /_/LensWebStandaloneUi/cspreport",
+ "content-security-policy-report-only": "script-src 'unsafe-inline' 'unsafe-eval' blob: data: https://translate.google.com/translate_a/element.js https://www.gstatic.com/_/mss/boq-one-google/_/ https://www.gstatic.com/og/_/js/ https://apis.google.com/js/api.js https://apis.google.com/js/client.js https://www.googletagmanager.com/gtag/js https://www.google-analytics.com/analytics.js https://www.googletagmanager.com/gtag/destination https://www.gstatic.com/_/mss/boq-lens/_/js/k=boq-lens.LensWebStandaloneUi.en_US.Su0rm4I5JIA.2018.O/ https://apis.google.com/_/scs/abc-static/_/js/ https://translate.googleapis.com/_/translate_http/_/js/;report-uri /_/LensWebStandaloneUi/cspreport/fine-allowlist",
+ "server": "ESF",
+ "content-length": "0",
+ "x-xss-protection": "0",
+ "x-content-type-options": "nosniff",
+ "set-cookie": [
+  "NID=CuUBCAESlwEBOxGDSBu0bjkl9EpmXz6Bv3TFhxMO7rz20zHdTulN-TVtFxJxbgCg8-fCE_V04VqDpFVfdzWq1bl2q7N-EjecDl9YWZAXyz3pT3v1FW0mswPh7LmSkrG1TTHmI00Fxx_ZQbMfwT0rJ5xKkhj-EOPRciVUV47zK1eqg7WCuIt4Ihd2qnA-zLsgidJv3jdeVOkML74dFhqVKAEyRQHSrAfPqYMnw71R_3QmOw_50l-ZSSS5TfJ4VHaoXMkP6dmYlswKNeGz8ow4WDBf8YHAP1QrXkS162CrOpdStqLE_k7WBA; expires=Sat, 24-Apr-2027 18:38:06 GMT; path=/; domain=.google.com; Secure; HttpOnly; SameSite=none"
+ ],
+ "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+ "connection": "close"
+}
+

@@ -1,0 +1,395 @@
+{
+  "$meta": {
+    "name": "reverse-video-search",
+    "version": "1.0.0",
+    "generated": "2026-10-23",
+    "designer": "颜好看",
+    "register": "product",
+    "platform": "web",
+    "defaultTheme": "dark",
+    "themes": ["dark", "light"],
+    "designVariance": 3,
+    "motionIntensity": 3,
+    "visualDensity": 7,
+    "referenceBrands": ["Linear", "GitHub Primer", "Figma (数值精度部分)"],
+    "iconSystem": {
+      "kind": "inline-svg-sprite",
+      "viewBox": "0 0 24 24",
+      "strokeWidth": 1.5,
+      "strokeLinecap": "round",
+      "strokeLinejoin": "round",
+      "fill": "none",
+      "colorSource": "currentColor",
+      "sizes": { "inline": 16, "button": 20, "standalone": 24, "badge": 12 },
+      "emojiPolicy": "禁止 emoji 作为功能图标"
+    },
+    "offlineNote": "本地服务场景：字体须本地托管，禁止依赖 Google Fonts CDN"
+  },
+
+  "themes": {
+    "dark": {
+      "color": {
+        "bg": { "value": "#0D1117", "layer": "B", "usage": "页面背景" },
+        "bgSunken": { "value": "#010409", "layer": "B", "usage": "凹槽区：上传区/日志/代码区" },
+        "surface": { "value": "#161B22", "layer": "A1", "usage": "面板/卡片/表格容器" },
+        "surfaceRaised": { "value": "#1C2129", "layer": "B", "usage": "悬浮行/下拉/Toast" },
+        "surfaceWarm": { "value": "#21262D", "layer": "B", "usage": "三级表面/表头/骨架屏" },
+        "surfaceHover": { "value": "#1C2129", "layer": "B", "usage": "行 hover" },
+        "surfaceSelected": { "value": "rgba(47,129,247,0.10)", "layer": "B", "usage": "行选中底" },
+
+        "fg": { "value": "#E6EDF3", "layer": "A1", "usage": "主文本" },
+        "fg2": { "value": "#ADBAC7", "layer": "B", "usage": "次级文本" },
+        "muted": { "value": "#8B949E", "layer": "A1", "usage": "副文本/表头" },
+        "meta": { "value": "#768390", "layer": "B", "usage": "三级文本/时间戳，最低对比度色" },
+        "fgOnAccent": { "value": "#FFFFFF", "layer": "A2", "usage": "强调色底上的前景" },
+
+        "border": { "value": "#30363D", "layer": "A1", "usage": "默认边框" },
+        "borderSoft": { "value": "#21262D", "layer": "B", "usage": "内部分隔线" },
+        "borderStrong": { "value": "#444C56", "layer": "B", "usage": "hover 边框" },
+        "borderAccent": { "value": "rgba(47,129,247,0.55)", "layer": "B", "usage": "选中/聚焦边框" },
+
+        "accent": { "value": "#2F81F7", "layer": "A1", "usage": "品牌强调色，每屏 ≤2 处可见" },
+        "accentHover": { "value": "#4C92F8", "layer": "A2", "usage": "hover" },
+        "accentActive": { "value": "#1F6FEB", "layer": "A2", "usage": "active" },
+        "accentOn": { "value": "#FFFFFF", "layer": "A2", "usage": "accent 底上的文字" },
+        "accentDim": { "value": "rgba(47,129,247,0.12)", "layer": "B", "usage": "accent 淡底" },
+        "accentDimStrong": { "value": "rgba(47,129,247,0.20)", "layer": "B", "usage": "accent 强调淡底" },
+
+        "success": { "value": "#3FB950", "layer": "A2", "usage": "成功/哈希高相似" },
+        "warn": { "value": "#D29922", "layer": "A2", "usage": "降级/限频/超时" },
+        "danger": { "value": "#F85149", "layer": "A2", "usage": "失败/引擎不可用" },
+        "successDim": { "value": "rgba(63,185,80,0.12)", "layer": "B", "usage": "success 淡底" },
+        "warnDim": { "value": "rgba(210,153,34,0.12)", "layer": "B", "usage": "warn 淡底" },
+        "dangerDim": { "value": "rgba(248,81,73,0.12)", "layer": "B", "usage": "danger 淡底" },
+        "successBorder": { "value": "rgba(63,185,80,0.45)", "layer": "B", "usage": "success 描边" },
+        "warnBorder": { "value": "rgba(210,153,34,0.45)", "layer": "B", "usage": "warn 描边" },
+        "dangerBorder": { "value": "rgba(248,81,73,0.45)", "layer": "B", "usage": "danger 描边" },
+
+        "statusPending": { "value": "#768390", "layer": "C", "usage": "帧×引擎：待处理" },
+        "statusSending": { "value": "#2F81F7", "layer": "C", "usage": "帧×引擎：发送中" },
+        "statusHit": { "value": "#3FB950", "layer": "C", "usage": "帧×引擎：成功有结果" },
+        "statusZero": { "value": "#8B949E", "layer": "C", "usage": "帧×引擎：成功零结果（中性，非绿非红，不得伪装）" },
+        "statusRatelimited": { "value": "#D29922", "layer": "C", "usage": "帧×引擎：限频" },
+        "statusCaptcha": { "value": "#D29922", "layer": "C", "usage": "帧×引擎：需验证码（转人工）" },
+        "statusCredential": { "value": "#F85149", "layer": "C", "usage": "帧×引擎：凭据错误" },
+        "statusNetwork": { "value": "#F85149", "layer": "C", "usage": "帧×引擎：网络错误" },
+        "statusParse": { "value": "#D29922", "layer": "C", "usage": "帧×引擎：解析异常" },
+        "statusSkipped": { "value": "#636E7B", "layer": "C", "usage": "帧×引擎：已跳过" },
+        "statusCancelled": { "value": "#636E7B", "layer": "C", "usage": "帧×引擎：已取消" },
+
+        "engineIdle": { "value": "#768390", "layer": "C", "usage": "引擎状态：未开始" },
+        "engineRunning": { "value": "#2F81F7", "layer": "C", "usage": "引擎状态：查询中" },
+        "engineOk": { "value": "#3FB950", "layer": "C", "usage": "引擎状态：成功" },
+        "engineThrottled": { "value": "#D29922", "layer": "C", "usage": "引擎状态：限频" },
+        "engineTimeout": { "value": "#D29922", "layer": "C", "usage": "引擎状态：超时重试中" },
+        "engineFailed": { "value": "#F85149", "layer": "C", "usage": "引擎状态：失败" },
+        "engineDisabled": { "value": "#636E7B", "layer": "C", "usage": "引擎状态：已禁用" },
+
+        "consentBg": { "value": "#1C2129", "layer": "C", "usage": "外发确认弹窗底" },
+        "consentBorder": { "value": "rgba(210,153,34,0.45)", "layer": "C", "usage": "外发确认弹窗描边（琥珀，警示级）" },
+        "consentAccent": { "value": "#D29922", "layer": "C", "usage": "外发确认弹窗强调" },
+        "consentBlockBg": { "value": "#010409", "layer": "C", "usage": "弹窗内信息块底" },
+        "consentBlockBorder": { "value": "#30363D", "layer": "C", "usage": "弹窗内信息块描边" },
+        "consentAckBg": { "value": "rgba(210,153,34,0.12)", "layer": "C", "usage": "确认勾选项背景" },
+
+        "scoreTrack": { "value": "#21262D", "layer": "C", "usage": "评分条轨道" },
+        "scoreFillHigh": { "value": "#3FB950", "layer": "C", "usage": "哈希相似度 ≥90%" },
+        "scoreFillMid": { "value": "#ADBAC7", "layer": "C", "usage": "哈希相似度 70–89%" },
+        "scoreFillLow": { "value": "#636E7B", "layer": "C", "usage": "哈希相似度 <70%" },
+        "rankTrack": { "value": "#21262D", "layer": "C", "usage": "排名百分位条轨道" },
+        "rankFill": { "value": "#ADBAC7", "layer": "C", "usage": "排名百分位条，恒中性色" },
+        "scoreSourceEngine": { "value": "#2F81F7", "layer": "C", "usage": "分数来源标签：引擎提供" },
+        "scoreSourceLocal": { "value": "#8B949E", "layer": "C", "usage": "分数来源标签：本地归一化" },
+        "scoreSourceNone": { "value": "#768390", "layer": "C", "usage": "分数来源标签：无分数" },
+
+        "degradedInfoBg": { "value": "rgba(47,129,247,0.12)", "layer": "C", "usage": "限频提示条底" },
+        "degradedInfoBorder": { "value": "rgba(47,129,247,0.55)", "layer": "C", "usage": "限频提示条描边" },
+        "degradedInfoFg": { "value": "#2F81F7", "layer": "C", "usage": "限频提示条图标/强调" },
+        "degradedWarnBg": { "value": "rgba(210,153,34,0.12)", "layer": "C", "usage": "部分降级提示条底" },
+        "degradedWarnBorder": { "value": "rgba(210,153,34,0.45)", "layer": "C", "usage": "部分降级提示条描边" },
+        "degradedWarnFg": { "value": "#D29922", "layer": "C", "usage": "部分降级提示条图标" },
+        "degradedDangerBg": { "value": "rgba(248,81,73,0.12)", "layer": "C", "usage": "全部失败提示条底" },
+        "degradedDangerBorder": { "value": "rgba(248,81,73,0.45)", "layer": "C", "usage": "全部失败提示条描边" },
+        "degradedDangerFg": { "value": "#F85149", "layer": "C", "usage": "全部失败提示条图标" }
+      },
+      "shadow": {
+        "flat": { "value": "none", "usage": "静态面板默认" },
+        "ring": { "value": "0 0 0 1px #30363D", "usage": "静态面板描边（与 raised 二选一）" },
+        "raised": { "value": "0 3px 6px rgba(1,4,9,0.40)", "usage": "浮起卡片（无 1px 边框）" },
+        "overlay": { "value": "0 8px 24px rgba(1,4,9,0.60), 0 0 0 1px #30363D", "usage": "Dropdown/Popover" },
+        "modal": { "value": "0 16px 48px rgba(1,4,9,0.75), 0 0 0 1px #30363D", "usage": "Modal" }
+      },
+      "focusRing": { "value": "0 0 0 2px #0D1117, 0 0 0 4px rgba(47,129,247,0.55)" }
+    },
+
+    "light": {
+      "color": {
+        "bg": { "value": "#FFFFFF", "layer": "B", "usage": "页面背景" },
+        "bgSunken": { "value": "#F6F8FA", "layer": "B", "usage": "凹槽区" },
+        "surface": { "value": "#FFFFFF", "layer": "A1", "usage": "面板/卡片" },
+        "surfaceRaised": { "value": "#F6F8FA", "layer": "B", "usage": "悬浮行/下拉/Toast" },
+        "surfaceWarm": { "value": "#EEF1F4", "layer": "B", "usage": "三级表面/表头/骨架屏" },
+        "surfaceHover": { "value": "#F6F8FA", "layer": "B", "usage": "行 hover" },
+        "surfaceSelected": { "value": "rgba(9,105,218,0.08)", "layer": "B", "usage": "行选中底" },
+
+        "fg": { "value": "#1F2328", "layer": "A1", "usage": "主文本" },
+        "fg2": { "value": "#424A53", "layer": "B", "usage": "次级文本" },
+        "muted": { "value": "#59636E", "layer": "A1", "usage": "副文本/表头" },
+        "meta": { "value": "#6E7781", "layer": "B", "usage": "三级文本/时间戳" },
+        "fgOnAccent": { "value": "#FFFFFF", "layer": "A2", "usage": "强调色底上的前景" },
+
+        "border": { "value": "#D1D9E0", "layer": "A1", "usage": "默认边框" },
+        "borderSoft": { "value": "#EEF1F4", "layer": "B", "usage": "内部分隔线" },
+        "borderStrong": { "value": "#AFB8C1", "layer": "B", "usage": "hover 边框" },
+        "borderAccent": { "value": "rgba(9,105,218,0.50)", "layer": "B", "usage": "选中/聚焦边框" },
+
+        "accent": { "value": "#0969DA", "layer": "A1", "usage": "品牌强调色，每屏 ≤2 处可见" },
+        "accentHover": { "value": "#0A58CA", "layer": "A2", "usage": "hover" },
+        "accentActive": { "value": "#0550AE", "layer": "A2", "usage": "active" },
+        "accentOn": { "value": "#FFFFFF", "layer": "A2", "usage": "accent 底上的文字" },
+        "accentDim": { "value": "rgba(9,105,218,0.10)", "layer": "B", "usage": "accent 淡底" },
+        "accentDimStrong": { "value": "rgba(9,105,218,0.16)", "layer": "B", "usage": "accent 强调淡底" },
+
+        "success": { "value": "#1A7F37", "layer": "A2", "usage": "成功/哈希高相似" },
+        "warn": { "value": "#9A6700", "layer": "A2", "usage": "降级/限频/超时" },
+        "danger": { "value": "#CF222E", "layer": "A2", "usage": "失败/引擎不可用" },
+        "successDim": { "value": "rgba(26,127,55,0.10)", "layer": "B", "usage": "success 淡底" },
+        "warnDim": { "value": "rgba(154,103,0,0.10)", "layer": "B", "usage": "warn 淡底" },
+        "dangerDim": { "value": "rgba(207,34,46,0.10)", "layer": "B", "usage": "danger 淡底" },
+        "successBorder": { "value": "rgba(26,127,55,0.40)", "layer": "B", "usage": "success 描边" },
+        "warnBorder": { "value": "rgba(154,103,0,0.40)", "layer": "B", "usage": "warn 描边" },
+        "dangerBorder": { "value": "rgba(207,34,46,0.40)", "layer": "B", "usage": "danger 描边" },
+
+        "statusPending": { "value": "#6E7781", "layer": "C", "usage": "帧×引擎：待处理" },
+        "statusSending": { "value": "#0969DA", "layer": "C", "usage": "帧×引擎：发送中" },
+        "statusHit": { "value": "#1A7F37", "layer": "C", "usage": "帧×引擎：成功有结果" },
+        "statusZero": { "value": "#59636E", "layer": "C", "usage": "帧×引擎：成功零结果（中性，非绿非红，不得伪装）" },
+        "statusRatelimited": { "value": "#9A6700", "layer": "C", "usage": "帧×引擎：限频" },
+        "statusCaptcha": { "value": "#9A6700", "layer": "C", "usage": "帧×引擎：需验证码（转人工）" },
+        "statusCredential": { "value": "#CF222E", "layer": "C", "usage": "帧×引擎：凭据错误" },
+        "statusNetwork": { "value": "#CF222E", "layer": "C", "usage": "帧×引擎：网络错误" },
+        "statusParse": { "value": "#9A6700", "layer": "C", "usage": "帧×引擎：解析异常" },
+        "statusSkipped": { "value": "#818B98", "layer": "C", "usage": "帧×引擎：已跳过" },
+        "statusCancelled": { "value": "#818B98", "layer": "C", "usage": "帧×引擎：已取消" },
+
+        "consentBg": { "value": "#F6F8FA", "layer": "C", "usage": "外发确认弹窗底" },
+        "consentBorder": { "value": "rgba(154,103,0,0.40)", "layer": "C", "usage": "外发确认弹窗描边" },
+        "consentAccent": { "value": "#9A6700", "layer": "C", "usage": "外发确认弹窗强调" },
+        "consentBlockBg": { "value": "#F6F8FA", "layer": "C", "usage": "弹窗内信息块底" },
+        "consentBlockBorder": { "value": "#D1D9E0", "layer": "C", "usage": "弹窗内信息块描边" },
+        "consentAckBg": { "value": "rgba(154,103,0,0.10)", "layer": "C", "usage": "确认勾选项背景" },
+
+        "engineIdle": { "value": "#6E7781", "layer": "C", "usage": "引擎状态：未开始" },
+        "engineRunning": { "value": "#0969DA", "layer": "C", "usage": "引擎状态：查询中" },
+        "engineOk": { "value": "#1A7F37", "layer": "C", "usage": "引擎状态：成功" },
+        "engineThrottled": { "value": "#9A6700", "layer": "C", "usage": "引擎状态：限频" },
+        "engineTimeout": { "value": "#9A6700", "layer": "C", "usage": "引擎状态：超时重试中" },
+        "engineFailed": { "value": "#CF222E", "layer": "C", "usage": "引擎状态：失败" },
+        "engineDisabled": { "value": "#818B98", "layer": "C", "usage": "引擎状态：已禁用" },
+
+        "scoreTrack": { "value": "#EEF1F4", "layer": "C", "usage": "评分条轨道" },
+        "scoreFillHigh": { "value": "#1A7F37", "layer": "C", "usage": "哈希相似度 ≥90%" },
+        "scoreFillMid": { "value": "#424A53", "layer": "C", "usage": "哈希相似度 70–89%" },
+        "scoreFillLow": { "value": "#818B98", "layer": "C", "usage": "哈希相似度 <70%" },
+        "rankTrack": { "value": "#EEF1F4", "layer": "C", "usage": "排名百分位条轨道" },
+        "rankFill": { "value": "#424A53", "layer": "C", "usage": "排名百分位条，恒中性色" },
+        "scoreSourceEngine": { "value": "#0969DA", "layer": "C", "usage": "分数来源标签：引擎提供" },
+        "scoreSourceLocal": { "value": "#59636E", "layer": "C", "usage": "分数来源标签：本地归一化" },
+        "scoreSourceNone": { "value": "#6E7781", "layer": "C", "usage": "分数来源标签：无分数" },
+
+        "degradedInfoBg": { "value": "rgba(9,105,218,0.10)", "layer": "C", "usage": "限频提示条底" },
+        "degradedInfoBorder": { "value": "rgba(9,105,218,0.50)", "layer": "C", "usage": "限频提示条描边" },
+        "degradedInfoFg": { "value": "#0969DA", "layer": "C", "usage": "限频提示条图标/强调" },
+        "degradedWarnBg": { "value": "rgba(154,103,0,0.10)", "layer": "C", "usage": "部分降级提示条底" },
+        "degradedWarnBorder": { "value": "rgba(154,103,0,0.40)", "layer": "C", "usage": "部分降级提示条描边" },
+        "degradedWarnFg": { "value": "#9A6700", "layer": "C", "usage": "部分降级提示条图标" },
+        "degradedDangerBg": { "value": "rgba(207,34,46,0.10)", "layer": "C", "usage": "全部失败提示条底" },
+        "degradedDangerBorder": { "value": "rgba(207,34,46,0.40)", "layer": "C", "usage": "全部失败提示条描边" },
+        "degradedDangerFg": { "value": "#CF222E", "layer": "C", "usage": "全部失败提示条图标" }
+      },
+      "shadow": {
+        "flat": { "value": "none", "usage": "静态面板默认" },
+        "ring": { "value": "0 0 0 1px #D1D9E0", "usage": "静态面板描边" },
+        "raised": { "value": "0 1px 3px rgba(31,35,40,0.12)", "usage": "浮起卡片" },
+        "overlay": { "value": "0 6px 16px rgba(31,35,40,0.16), 0 0 0 1px #D1D9E0", "usage": "Dropdown/Popover" },
+        "modal": { "value": "0 16px 40px rgba(31,35,40,0.24), 0 0 0 1px #D1D9E0", "usage": "Modal" }
+      },
+      "focusRing": { "value": "0 0 0 2px #FFFFFF, 0 0 0 4px rgba(9,105,218,0.45)" }
+    }
+  },
+
+  "shared": {
+    "font": {
+      "family": {
+        "display": {
+          "value": "\"Inter\", \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, -apple-system, sans-serif",
+          "type": "fontFamily"
+        },
+        "body": {
+          "value": "\"Inter\", \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, -apple-system, sans-serif",
+          "type": "fontFamily"
+        },
+        "mono": {
+          "value": "\"JetBrains Mono\", \"SFMono-Regular\", \"Cascadia Mono\", \"Consolas\", \"Noto Sans Mono CJK SC\", monospace",
+          "type": "fontFamily"
+        }
+      },
+      "weight": {
+        "read": { "value": 400, "type": "fontWeight", "usage": "正文/描述" },
+        "emphasize": { "value": 510, "type": "fontWeight", "usage": "小标题/表头/按钮" },
+        "announce": { "value": 590, "type": "fontWeight", "usage": "页面标题/关键数值" }
+      },
+      "size": {
+        "xs": { "value": "0.6875rem", "type": "dimension", "px": 11, "usage": "角标数字/极窄标签" },
+        "sm": { "value": "0.75rem", "type": "dimension", "px": 12, "usage": "辅助信息/表头" },
+        "base": { "value": "0.8125rem", "type": "dimension", "px": 13, "usage": "UI 基准：表格/列表/按钮" },
+        "md": { "value": "0.875rem", "type": "dimension", "px": 14, "usage": "正文段落" },
+        "lg": { "value": "1rem", "type": "dimension", "px": 16, "usage": "区块小标题" },
+        "xl": { "value": "1.125rem", "type": "dimension", "px": 18, "usage": "页面标题" },
+        "2xl": { "value": "1.375rem", "type": "dimension", "px": 22, "usage": "面板主标题" },
+        "3xl": { "value": "1.75rem", "type": "dimension", "px": 28, "usage": "唯一大标题（工作台首屏）" }
+      },
+      "leading": {
+        "tight": { "value": 1.2, "type": "number", "usage": "大标题" },
+        "snug": { "value": 1.35, "type": "number", "usage": "小标题/按钮" },
+        "body": { "value": 1.6, "type": "number", "usage": "中文正文" },
+        "relaxed": { "value": 1.75, "type": "number", "usage": "长文说明" }
+      },
+      "tracking": {
+        "display": { "value": "-0.02em", "type": "dimension", "usage": "≥22px 标题" },
+        "title": { "value": "-0.01em", "type": "dimension", "usage": "16–18px 标题" },
+        "normal": { "value": "0", "type": "dimension", "usage": "正文" },
+        "caps": { "value": "0.08em", "type": "dimension", "usage": "全大写拉丁标签" },
+        "mono": { "value": "0", "type": "dimension", "usage": "等宽数值/域名" }
+      }
+    },
+
+    "space": {
+      "0": { "value": "0px", "type": "dimension" },
+      "1": { "value": "4px", "type": "dimension" },
+      "2": { "value": "8px", "type": "dimension" },
+      "3": { "value": "12px", "type": "dimension" },
+      "4": { "value": "16px", "type": "dimension" },
+      "5": { "value": "20px", "type": "dimension" },
+      "6": { "value": "24px", "type": "dimension" },
+      "8": { "value": "32px", "type": "dimension" },
+      "10": { "value": "40px", "type": "dimension" },
+      "12": { "value": "48px", "type": "dimension" },
+      "16": { "value": "64px", "type": "dimension" }
+    },
+
+    "radius": {
+      "sm": { "value": "4px", "type": "dimension", "usage": "Badge/进度条" },
+      "md": { "value": "6px", "type": "dimension", "usage": "按钮/输入框" },
+      "lg": { "value": "8px", "type": "dimension", "usage": "面板/静态卡片" },
+      "xl": { "value": "12px", "type": "dimension", "usage": "模态框/大容器" },
+      "2xl": { "value": "16px", "type": "dimension", "usage": "上限，禁止超过" },
+      "full": { "value": "9999px", "type": "dimension", "usage": "状态点/头像" }
+    },
+
+    "size": {
+      "containerMax": { "value": "1440px", "type": "dimension" },
+      "gutterDesktop": { "value": "24px", "type": "dimension" },
+      "gutterTablet": { "value": "16px", "type": "dimension" },
+      "gutterPhone": { "value": "12px", "type": "dimension" },
+      "sidebarWidth": { "value": "240px", "type": "dimension" },
+      "inspectorWidth": { "value": "360px", "type": "dimension" },
+      "topbarHeight": { "value": "48px", "type": "dimension" },
+      "statusbarHeight": { "value": "28px", "type": "dimension" },
+      "rowCompact": { "value": "28px", "type": "dimension", "usage": "表格紧凑行高" },
+      "rowResult": { "value": "72px", "type": "dimension", "usage": "结果行高（含 96×54 缩略图）" },
+      "frameThumbWidth": { "value": "168px", "type": "dimension", "usage": "帧缩略图宽（16:9 → 94px 高）" },
+      "thumbWidth": { "value": "96px", "type": "dimension", "usage": "结果缩略图宽（16:9 → 54px 高）" },
+      "touchTarget": { "value": "44px", "type": "dimension", "usage": "pointer:coarse 下最小点击区" }
+    },
+
+    "motion": {
+      "duration": {
+        "instant": { "value": "80ms", "type": "duration", "usage": "按钮按下/开关切换" },
+        "fast": { "value": "150ms", "type": "duration", "usage": "收敛基准：hover/选中" },
+        "base": { "value": "200ms", "type": "duration", "usage": "下拉展开/Toast 进入" },
+        "slow": { "value": "300ms", "type": "duration", "usage": "面板推入/Compare 切换" },
+        "slower": { "value": "400ms", "type": "duration", "usage": "上限，超过需审批" }
+      },
+      "easing": {
+        "standard": { "value": "cubic-bezier(0.2, 0, 0, 1)", "type": "cubicBezier" },
+        "inOut": { "value": "cubic-bezier(0.4, 0, 0.2, 1)", "type": "cubicBezier" },
+        "linear": { "value": "linear", "type": "cubicBezier", "usage": "进度条/骨架屏微光" }
+      },
+      "forbidden": {
+        "bounce": "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+        "maxDuration": "1000ms",
+        "maxConcurrentAnimatedElements": 3
+      }
+    },
+
+    "zIndex": {
+      "base": { "value": 0, "type": "number" },
+      "sticky": { "value": 100, "type": "number" },
+      "dropdown": { "value": 1000, "type": "number" },
+      "overlay": { "value": 1100, "type": "number" },
+      "modal": { "value": 1200, "type": "number" },
+      "toast": { "value": 1300, "type": "number" }
+    },
+
+    "opacity": {
+      "disabled": { "value": 0.45, "type": "number" },
+      "degradedThumb": { "value": 0.55, "type": "number", "usage": "失败帧缩略图降透明度" }
+    },
+
+    "breakpoint": {
+      "xs": { "value": "0px", "type": "dimension", "usage": "手机（<640px），单列" },
+      "sm": { "value": "640px", "type": "dimension", "usage": "手机横屏/小平板" },
+      "md": { "value": "768px", "type": "dimension", "usage": "平板竖屏，Inspector 转抽屉" },
+      "lg": { "value": "1024px", "type": "dimension", "usage": "笔记本，Sidebar 常驻" },
+      "xl": { "value": "1280px", "type": "dimension", "usage": "桌面完整三栏" },
+      "2xl": { "value": "1536px", "type": "dimension", "usage": "宽屏，帧网格列数上限" }
+    }
+  },
+
+  "component": {
+    "button": {
+      "height": { "sm": "28px", "md": "32px", "lg": "40px" },
+      "paddingX": { "sm": "8px", "md": "12px", "lg": "16px" },
+      "radius": "6px",
+      "states": ["default", "hover", "focus-visible", "active", "disabled", "loading"]
+    },
+    "input": {
+      "height": "32px",
+      "radius": "6px",
+      "states": ["default", "hover", "focus", "error", "disabled", "readOnly"]
+    },
+    "panel": {
+      "padding": "16px",
+      "radius": "8px",
+      "border": "1px solid var(--border)",
+      "shadow": "none",
+      "note": "静态面板禁止 1px 边框与 blur≥16px 阴影同时出现"
+    },
+    "row": {
+      "heightCompact": "28px",
+      "heightResult": "72px",
+      "states": ["default", "hover", "selected", "focus-visible", "degraded"]
+    },
+    "badge": {
+      "height": "20px",
+      "paddingX": "6px",
+      "radius": "4px",
+      "variants": ["neutral", "accent", "success", "warn", "danger", "crossValidated"]
+    },
+    "progress": { "height": "4px", "radius": "4px" },
+    "statusDot": { "size": "8px", "sizeSmall": "6px", "radius": "9999px" }
+  },
+
+  "icon": {
+    "spriteIdPrefix": "rvs-icon-",
+    "viewBox": "0 0 24 24",
+    "strokeWidth": 1.5,
+    "strokeLinecap": "round",
+    "strokeLinejoin": "round",
+    "fill": "none",
+    "stroke": "currentColor",
+    "sizes": { "inline": 16, "button": 20, "standalone": 24, "badge": 12 },
+    "rule": "全项目单一 sprite，禁止混用第二套图标库，禁止 emoji"
+  }
+}

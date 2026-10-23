@@ -1,0 +1,4 @@
+window.postMessage({source:'rvs-lens-bridge',type:'ready'},'*');
+window.addEventListener('message',event=>{if(event.source!==window||event.data?.source!=='rvs-local')return; if(event.data.type==='search-frames')chrome.runtime.sendMessage({type:'search-frames',frames:event.data.frames});if(event.data.type==='cancel-search')chrome.runtime.sendMessage({type:'cancel-search'});});
+chrome.runtime.onMessage.addListener(message=>{if(message?.type==='bridge-status')window.postMessage({source:'rvs-lens-bridge',type:'status',status:message.status,index:message.index,error:message.error,results:message.results},'*');});
+window.addEventListener('message',event=>{if(event.source===window&&event.data?.source==='rvs-local'&&event.data.type==='ping')window.postMessage({source:'rvs-lens-bridge',type:'ready'},'*')});

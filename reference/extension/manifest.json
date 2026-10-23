@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Reverse Video Search · Google Lens Bridge",
+  "version": "0.1.6",
+  "description": "将本地反向视频搜索页面抽取的关键帧自动送入 Google Lens 文件上传流程。",
+  "permissions": ["debugger", "downloads", "tabs", "scripting"],
+  "host_permissions": ["https://images.google.com/*", "https://lens.google.com/*", "https://www.google.com/*", "https://www.google.com.hk/*", "http://127.0.0.1:4173/*", "http://localhost:4173/*", "file:///*"],
+  "background": {"service_worker": "background.js"},
+  "content_scripts": [{"matches": ["http://127.0.0.1:4173/*", "http://localhost:4173/*", "file:///*"], "js": ["content.js"], "run_at": "document_idle"}],
+  "action": {"default_title": "Google Lens Bridge"}
+}

@@ -1,0 +1,519 @@
+/* =============================================================================
+   reverse-video-search — Design Tokens (CSS Variables)
+   -----------------------------------------------------------------------------
+   设计师：颜好看   |   寄存器：Product（工具型）   |   平台轴：web
+   三轴刻度：Variance 3 / Motion 3 / Density 7
+   主题：默认 dark，切换 [data-theme="light"]（写在 <html> 上）
+   规则：
+     - 所有颜色必须经本文件变量引用，禁止组件内硬编码 hex（唯一例外 #fff / #000）
+     - 全项目只此一套图标：内联 SVG sprite，viewBox 0 0 24 24，stroke-width 1.5，currentColor
+     - 禁用 emoji 作为功能图标
+   ============================================================================= */
+
+/* =============================================================================
+   0. 主题根：默认深色
+   ============================================================================= */
+:root {
+  color-scheme: dark;
+
+  /* ---------------------------------------------------------------------------
+     A1 — Identity / Primitive：中性色阶（GitHub Primer 冷灰，带蓝调，非纯灰）
+     --------------------------------------------------------------------------- */
+  --neutral-000: #010409;
+  --neutral-050: #0d1117;
+  --neutral-100: #161b22;
+  --neutral-150: #1c2129;
+  --neutral-200: #21262d;
+  --neutral-300: #30363d;
+  --neutral-400: #444c56;
+  --neutral-500: #636e7b;
+  --neutral-600: #768390;
+  --neutral-700: #8b949e;
+  --neutral-800: #adbac7;
+  --neutral-900: #d0d7de;
+  --neutral-950: #e6edf3;
+
+  /* ---------------------------------------------------------------------------
+     A1 — Identity：品牌强调色（Azure Blue）
+     选型理由：溯源/取证语义需要冷静可靠；明确避开 Tailwind 默认 Indigo #6366F1；
+               与语义色（绿/琥珀/红）无混淆，引擎状态点多色并存时不打架。
+     --------------------------------------------------------------------------- */
+  --accent-base: #2f81f7;
+  --accent-bright: #4c92f8;
+  --accent-deep: #1f6feb;
+
+  /* ---------------------------------------------------------------------------
+     A2 — Semantic：语义色（有默认值，品牌可覆盖）
+     --------------------------------------------------------------------------- */
+  --success-base: #3fb950;
+  --warn-base: #d29922;
+  --danger-base: #f85149;
+
+  /* ---------------------------------------------------------------------------
+     A1 — Identity：字体栈（离线安全，本地托管优先，含中文回退）
+     --------------------------------------------------------------------------- */
+  --font-display: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+    system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+    system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", "Cascadia Mono", "Consolas",
+    "Noto Sans Mono CJK SC", monospace;
+
+  /* ---------------------------------------------------------------------------
+     A1-structure：字号阶梯（8 级，基准 13px —— Product 寄存器 + Density 7）
+     --------------------------------------------------------------------------- */
+  --text-xs: 0.6875rem; /* 11px  极窄标签/角标数字 */
+  --text-sm: 0.75rem; /* 12px  辅助信息、表头 */
+  --text-base: 0.8125rem; /* 13px  UI 基准：表格、列表、按钮 */
+  --text-md: 0.875rem; /* 14px  正文段落 */
+  --text-lg: 1rem; /* 16px  区块小标题 */
+  --text-xl: 1.125rem; /* 18px  页面标题 */
+  --text-2xl: 1.375rem; /* 22px  面板主标题 */
+  --text-3xl: 1.75rem; /* 28px  唯一大标题（仅工作台首屏） */
+
+  /* ---------------------------------------------------------------------------
+     A1-structure：行高 / 字距 / 字重
+     --------------------------------------------------------------------------- */
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-body: 1.6; /* 中文正文需宽松 */
+  --leading-relaxed: 1.75;
+
+  --tracking-display: -0.02em; /* ≥22px 标题 */
+  --tracking-title: -0.01em; /* 16-18px 标题 */
+  --tracking-normal: 0;
+  --tracking-caps: 0.08em; /* 全大写拉丁标签 */
+  --tracking-mono: 0;
+
+  --weight-read: 400;
+  --weight-emphasize: 510;
+  --weight-announce: 590;
+
+  /* ---------------------------------------------------------------------------
+     A2 — Structure：间距（4px 网格）
+     --------------------------------------------------------------------------- */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---------------------------------------------------------------------------
+     A2 — Structure：圆角（工具型，上限 16px）
+     --------------------------------------------------------------------------- */
+  --radius-sm: 4px; /* Badge / Tag / 进度条 */
+  --radius-md: 6px; /* 按钮 / 输入框 / 图标按钮 */
+  --radius-lg: 8px; /* 面板 / 静态卡片 */
+  --radius-xl: 12px; /* 模态框 / 大容器 */
+  --radius-2xl: 16px; /* 上限，禁止超过 */
+  --radius-full: 9999px; /* 状态点 / 头像 */
+
+  /* ---------------------------------------------------------------------------
+     A2 — Structure：布局
+     --------------------------------------------------------------------------- */
+  --container-max: 1440px;
+  --container-gutter-desktop: 24px;
+  --container-gutter-tablet: 16px;
+  --container-gutter-phone: 12px;
+  --section-y-desktop: 24px; /* Product 寄存器：节区节奏收紧 */
+  --section-y-tablet: 20px;
+  --section-y-phone: 16px;
+
+  --sidebar-w: 240px;
+  --inspector-w: 360px;
+  --topbar-h: 48px;
+  --statusbar-h: 28px;
+  --row-h-compact: 28px; /* Density 7：表格紧凑行 */
+  --row-h-result: 72px; /* 结果行（含缩略图） */
+  --frame-thumb-w: 168px; /* 帧缩略图 16:9 @168 → 94px 高 */
+
+  /* ---------------------------------------------------------------------------
+     A2 — Structure：Z 轴层级
+     --------------------------------------------------------------------------- */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dropdown: 1000;
+  --z-overlay: 1100;
+  --z-modal: 1200;
+  --z-toast: 1300;
+
+  /* ---------------------------------------------------------------------------
+     A2 — Structure：动效（150ms 收敛，禁止弹跳缓动）
+     --------------------------------------------------------------------------- */
+  --motion-instant: 80ms;
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-slow: 300ms;
+  --motion-slower: 400ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-linear: linear;
+
+  /* ---------------------------------------------------------------------------
+     B-slot / 以下为按主题解析的语义变量（深色默认值）
+     --------------------------------------------------------------------------- */
+
+  /* Surface */
+  --bg: var(--neutral-050);
+  --bg-sunken: var(--neutral-000);
+  --surface: var(--neutral-100);
+  --surface-raised: var(--neutral-150);
+  --surface-warm: var(--neutral-200);
+  --surface-hover: var(--neutral-150);
+  --surface-selected: rgba(47, 129, 247, 0.1);
+
+  /* Foreground */
+  --fg: var(--neutral-950);
+  --fg-2: var(--neutral-800);
+  --muted: var(--neutral-700);
+  --meta: var(--neutral-600);
+  --fg-on-accent: #ffffff;
+
+  /* Border */
+  --border: var(--neutral-300);
+  --border-soft: var(--neutral-200);
+  --border-strong: var(--neutral-400);
+  --border-accent: rgba(47, 129, 247, 0.55);
+
+  /* Accent（每屏 ≤2 处可见使用） */
+  --accent: var(--accent-base);
+  --accent-hover: var(--accent-bright);
+  --accent-active: var(--accent-deep);
+  --accent-on: var(--fg-on-accent);
+  --accent-dim: rgba(47, 129, 247, 0.12);
+  --accent-dim-strong: rgba(47, 129, 247, 0.2);
+
+  /* Semantic */
+  --success: var(--success-base);
+  --warn: var(--warn-base);
+  --danger: var(--danger-base);
+  --success-dim: rgba(63, 185, 80, 0.12);
+  --warn-dim: rgba(210, 153, 34, 0.12);
+  --danger-dim: rgba(248, 81, 73, 0.12);
+  --success-border: rgba(63, 185, 80, 0.45);
+  --warn-border: rgba(210, 153, 34, 0.45);
+  --danger-border: rgba(248, 81, 73, 0.45);
+
+  /* C-extension — 「帧 × 引擎」状态色（项目专属，PRD §5.2 P0-B 十一态）
+     配色原则：成功类用绿/中性，失败类用红，需人工介入类用琥珀。
+     「成功零结果」必须用中性色 —— 用绿会伪装成命中，用红会伪装成失败。 */
+  --status-pending: var(--neutral-600); /* 待处理 */
+  --status-sending: var(--accent); /* 发送中 */
+  --status-hit: var(--success); /* 成功有结果 */
+  --status-zero: var(--neutral-700); /* 成功零结果（中性，非绿非红） */
+  --status-ratelimited: var(--warn); /* 限频 */
+  --status-captcha: var(--warn); /* 需验证码（转人工） */
+  --status-credential: var(--danger); /* 凭据错误 */
+  --status-network: var(--danger); /* 网络错误 */
+  --status-parse: var(--warn); /* 解析异常（第三方结构变化） */
+  --status-skipped: var(--neutral-500); /* 已跳过 */
+  --status-cancelled: var(--neutral-500); /* 已取消 */
+
+  /* 引擎级（聚合上述十一态后的 provider 健康度） */
+  --engine-idle: var(--neutral-600);
+  --engine-running: var(--accent);
+  --engine-ok: var(--success);
+  --engine-throttled: var(--warn);
+  --engine-timeout: var(--warn);
+  --engine-failed: var(--danger);
+  --engine-disabled: var(--neutral-500);
+
+  /* C-extension — 外发确认（Dispatch Consent）专属 */
+  --consent-bg: var(--surface-raised);
+  --consent-border: var(--warn-border);
+  --consent-accent: var(--warn);
+  --consent-block-bg: var(--bg-sunken);
+  --consent-block-border: var(--border);
+  --consent-ack-bg: var(--warn-dim);
+
+  /* C-extension — 相似度评分条（项目专属） */
+  --score-track: var(--neutral-200);
+  --score-fill-high: var(--success-base); /* 哈希相似度 ≥90% */
+  --score-fill-mid: var(--neutral-800); /* 70–89% */
+  --score-fill-low: var(--neutral-500); /* <70% */
+  --rank-track: var(--neutral-200);
+  --rank-fill: var(--neutral-800); /* 排名百分位恒用中性色，避免与哈希条争色 */
+  /* 分数来源标签：PRD §5.2 P0-C 要求标注「引擎提供 / 本地归一化 / 无分数」 */
+  --score-source-engine: var(--accent);
+  --score-source-local: var(--muted);
+  --score-source-none: var(--meta);
+
+  /* C-extension — 降级态提示条（项目专属） */
+  --degraded-info-bg: var(--accent-dim);
+  --degraded-info-border: var(--border-accent);
+  --degraded-info-fg: var(--accent);
+  --degraded-warn-bg: var(--warn-dim);
+  --degraded-warn-border: var(--warn-border);
+  --degraded-warn-fg: var(--warn);
+  --degraded-danger-bg: var(--danger-dim);
+  --degraded-danger-border: var(--danger-border);
+  --degraded-danger-fg: var(--danger);
+
+  /* Elevation — 规则：静态卡片「1px 边框」与「阴影」二选一，禁止同元素并存。
+     仅浮层（Dropdown / Modal / Toast）允许 ring + shadow 组合。 */
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: 0 3px 6px rgba(1, 4, 9, 0.4);
+  --elev-overlay: 0 8px 24px rgba(1, 4, 9, 0.6), 0 0 0 1px var(--border);
+  --elev-modal: 0 16px 48px rgba(1, 4, 9, 0.75), 0 0 0 1px var(--border);
+
+  /* Focus */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px rgba(47, 129, 247, 0.55);
+  --focus-ring-inset: inset 0 0 0 1px var(--accent);
+
+  /* Opacity — 降级/禁用态 */
+  --opacity-disabled: 0.45;
+  --opacity-degraded-thumb: 0.55; /* 失败帧缩略图降透明度 */
+}
+
+/* =============================================================================
+   1. 浅色主题覆盖
+   ============================================================================= */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* Primitive 中性色阶重映射 */
+  --neutral-000: #f6f8fa;
+  --neutral-050: #ffffff;
+  --neutral-100: #ffffff;
+  --neutral-150: #f6f8fa;
+  --neutral-200: #eef1f4;
+  --neutral-300: #d1d9e0;
+  --neutral-400: #afb8c1;
+  --neutral-500: #818b98;
+  --neutral-600: #6e7781;
+  --neutral-700: #59636e;
+  --neutral-800: #424a53;
+  --neutral-900: #24292f;
+  --neutral-950: #1f2328;
+
+  /* 强调色：浅底需更深的蓝以保证 4.5:1 */
+  --accent-base: #0969da;
+  --accent-bright: #0a58ca;
+  --accent-deep: #0550ae;
+
+  --success-base: #1a7f37;
+  --warn-base: #9a6700;
+  --danger-base: #cf222e;
+
+  /* 语义解析 */
+  --bg: var(--neutral-050);
+  --bg-sunken: var(--neutral-000);
+  --surface: var(--neutral-100);
+  --surface-raised: var(--neutral-150);
+  --surface-warm: var(--neutral-200);
+  --surface-hover: var(--neutral-150);
+  --surface-selected: rgba(9, 105, 218, 0.08);
+
+  --fg: var(--neutral-950);
+  --fg-2: var(--neutral-800);
+  --muted: var(--neutral-700);
+  --meta: var(--neutral-600);
+  --fg-on-accent: #ffffff;
+
+  --border: var(--neutral-300);
+  --border-soft: var(--neutral-200);
+  --border-strong: var(--neutral-400);
+  --border-accent: rgba(9, 105, 218, 0.5);
+
+  --accent-dim: rgba(9, 105, 218, 0.1);
+  --accent-dim-strong: rgba(9, 105, 218, 0.16);
+
+  --success-dim: rgba(26, 127, 55, 0.1);
+  --warn-dim: rgba(154, 103, 0, 0.1);
+  --danger-dim: rgba(207, 34, 46, 0.1);
+  --success-border: rgba(26, 127, 55, 0.4);
+  --warn-border: rgba(154, 103, 0, 0.4);
+  --danger-border: rgba(207, 34, 46, 0.4);
+
+  --score-fill-high: var(--success-base);
+  --score-fill-mid: var(--neutral-800);
+  --score-fill-low: var(--neutral-500);
+
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: 0 1px 3px rgba(31, 35, 40, 0.12);
+  --elev-overlay: 0 6px 16px rgba(31, 35, 40, 0.16), 0 0 0 1px var(--border);
+  --elev-modal: 0 16px 40px rgba(31, 35, 40, 0.24), 0 0 0 1px var(--border);
+
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px rgba(9, 105, 218, 0.45);
+}
+
+/* =============================================================================
+   2. B-slot — 组件级 Token
+   ============================================================================= */
+:root {
+  /* 按钮 Primary */
+  --btn-primary-bg: var(--accent);
+  --btn-primary-fg: var(--accent-on);
+  --btn-primary-bg-hover: var(--accent-hover);
+  --btn-primary-bg-active: var(--accent-active);
+  --btn-primary-border: transparent;
+
+  /* 按钮 Secondary */
+  --btn-secondary-bg: var(--surface);
+  --btn-secondary-fg: var(--fg);
+  --btn-secondary-bg-hover: var(--surface-hover);
+  --btn-secondary-bg-active: var(--surface-warm);
+  --btn-secondary-border: var(--border);
+
+  /* 按钮 Ghost */
+  --btn-ghost-bg: transparent;
+  --btn-ghost-fg: var(--muted);
+  --btn-ghost-bg-hover: var(--surface-hover);
+  --btn-ghost-fg-hover: var(--fg);
+  --btn-ghost-border: transparent;
+
+  /* 按钮 Danger */
+  --btn-danger-bg: transparent;
+  --btn-danger-fg: var(--danger);
+  --btn-danger-bg-hover: var(--danger-dim);
+  --btn-danger-border: var(--danger-border);
+
+  /* 按钮几何 */
+  --btn-h-sm: 28px;
+  --btn-h-md: 32px;
+  --btn-h-lg: 40px;
+  --btn-px-sm: 8px;
+  --btn-px-md: 12px;
+  --btn-px-lg: 16px;
+  --btn-radius: var(--radius-md);
+
+  /* 输入框 */
+  --input-bg: var(--bg-sunken);
+  --input-fg: var(--fg);
+  --input-placeholder: var(--meta);
+  --input-border: var(--border);
+  --input-border-hover: var(--border-strong);
+  --input-border-focus: var(--accent);
+  --input-ring-focus: var(--focus-ring);
+  --input-bg-disabled: var(--surface-warm);
+  --input-fg-disabled: var(--meta);
+  --input-border-error: var(--danger);
+  --input-h: 32px;
+
+  /* 静态面板 / 卡片（1px 边框，无阴影） */
+  --panel-bg: var(--surface);
+  --panel-border: var(--border);
+  --panel-radius: var(--radius-lg);
+  --panel-p: var(--space-4);
+
+  /* 分隔（Density 7 用 1px 线分组，不套卡片盒） */
+  --divider: var(--border-soft);
+  --divider-strong: var(--border);
+
+  /* 表格行 */
+  --row-bg-hover: var(--surface-hover);
+  --row-bg-selected: var(--surface-selected);
+  --row-border-selected: var(--border-accent);
+
+  /* Badge / Tag */
+  --badge-bg: var(--surface-warm);
+  --badge-fg: var(--fg-2);
+  --badge-border: transparent;
+  --badge-accent-bg: var(--accent-dim);
+  --badge-accent-fg: var(--accent);
+  --badge-accent-border: var(--border-accent);
+  --badge-success-bg: var(--success-dim);
+  --badge-success-fg: var(--success);
+  --badge-warn-bg: var(--warn-dim);
+  --badge-warn-fg: var(--warn);
+  --badge-danger-bg: var(--danger-dim);
+  --badge-danger-fg: var(--danger);
+  --badge-h: 20px;
+  --badge-px: 6px;
+  --badge-radius: var(--radius-sm);
+
+  /* 拖拽上传区 */
+  --dropzone-bg: var(--bg-sunken);
+  --dropzone-border: var(--border);
+  --dropzone-border-hover: var(--border-strong);
+  --dropzone-border-active: var(--accent);
+  --dropzone-bg-active: var(--accent-dim);
+
+  /* 进度条 */
+  --progress-track: var(--neutral-200);
+  --progress-fill: var(--accent);
+  --progress-h: 4px;
+  --progress-radius: var(--radius-sm);
+
+  /* Toast */
+  --toast-bg: var(--surface-raised);
+  --toast-border: var(--border);
+  --toast-fg: var(--fg);
+  --toast-shadow: var(--elev-overlay);
+
+  /* 骨架屏 */
+  --skeleton-bg: var(--surface-warm);
+  --skeleton-shine: var(--neutral-300);
+}
+
+/* =============================================================================
+   3. 全局基础样式契约（前端必须落地）
+   ============================================================================= */
+
+/* 焦点可见：仅键盘焦点显示，鼠标点击不显示 */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-md);
+}
+
+/* 触摸目标：移动端所有可点元素 ≥44×44（桌面可 28–32px） */
+@media (pointer: coarse) {
+  :where(button, a, [role="button"], [role="tab"], [role="option"]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* 降低动效偏好：关闭所有非必要动画，保留透明度/颜色过渡 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 主题切换过渡：仅颜色，禁过渡布局属性 */
+:root {
+  transition: background-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard);
+}
+
+/* =============================================================================
+   4. 图标系统契约（全项目唯一一套）
+   -----------------------------------------------------------------------------
+   - 实现方式：内联 SVG sprite（<symbol id="rvs-icon-xxx" viewBox="0 0 24 24">）
+   - 渲染：<svg class="icon" width="16|20|24" height="…" aria-hidden="true">
+             <use href="#rvs-icon-xxx" /></svg>
+   - 统一属性：fill="none" stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" stroke-linejoin="round"
+   - 尺寸档位：16px 行内 / 20px 按钮内 / 24px 独立图标
+   - 禁止 emoji 充当功能图标
+   ============================================================================= */
+:root {
+  --icon-stroke-width: 1.5;
+  --icon-size-inline: 16px;
+  --icon-size-button: 20px;
+  --icon-size-standalone: 24px;
+  --icon-size-badge: 12px; /* 缩略图角标 */
+}
+
+/* =============================================================================
+   5. 引擎状态点（纯 CSS，不用图标）
+   ============================================================================= */
+:root {
+  --status-dot-size: 8px;
+  --status-dot-size-sm: 6px;
+}

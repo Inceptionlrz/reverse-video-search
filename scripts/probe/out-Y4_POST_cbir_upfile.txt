@@ -1,0 +1,25 @@
+STATUS 307
+HEADERS {
+ "x-yandex-items-count": "15",
+ "strict-transport-security": "max-age=31536000; includeSubDomains",
+ "nel": "{\"report_to\": \"network-errors\", \"max_age\": 100, \"success_fraction\": 0.001, \"failure_fraction\": 0.1}",
+ "x-content-type-options": "nosniff",
+ "connection": "Close",
+ "x-yandex-sts": "1",
+ "location": "https://yandex.com/images/search?lr=10619&redircnt=1792780952.1",
+ "transfer-encoding": "chunked",
+ "x-yandex-req-id": "1792780952211488-865066072810716728-yvioh3j443rtt7nt-BAL",
+ "report-to": "{ \"group\": \"network-errors\", \"max_age\": 100, \"endpoints\": [{\"url\": \"https://dr.yandex.net/nel\", \"priority\": 1}, {\"url\": \"https://dr2.yandex.net/nel\", \"priority\": 2}]}",
+ "accept-ch": "Sec-CH-UA-Platform-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA, Sec-CH-UA-Full-Version-List, Sec-CH-UA-WoW64, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Platform, Sec-CH-UA-Full-Version, Sec-CH-Viewport-Width, Viewport-Width, DPR, Device-Memory, RTT, Downlink, ECT, Width, Sec-Ch-Viewport-Height",
+ "set-cookie": [
+  "is_gdpr=0; Path=/; Domain=.yandex.com; Expires=Sun, 22 Oct 2028 18:42:32 GMT; SameSite=None; Secure",
+  "is_gdpr_b=CKujHBCdowM=; Path=/; Domain=.yandex.com; Expires=Sun, 22 Oct 2028 18:42:32 GMT; SameSite=None; Secure",
+  "_yasc=Cp+XVBMos2eT//jGO2fhP+dE2r3PdL5Y9Hn3g4CH4KdPD+asOmti0+rLDsdk9cSUw/UhnA==; domain=.yandex.com; path=/; expires=Mon, 20 Oct 2036 18:42:32 GMT; SameSite=None; Secure",
+  "pi=Y2JgUtYoF1g8yNMy0y6kiSnRViIWhB7TgSqE7lsbY9W55KcnBpk4wNATmGyU22JYkEwXQftdKHEM3eWY39gUT8LSa18=; Expires=Sun, 22-Oct-2028 18:42:32 GMT; Domain=.yandex.com; Path=/; Secure; HttpOnly; SameSite=None; Partitioned",
+  "i=CKmJxQXRCg9J/a+qIX7VM1A/aIV8fV9MR7Y8vuJDbNzfc6n5/L9laiX5ZaXXYb/BcWi9DGiGSXku2aSGrc8MgDWOs6Y=; Expires=Sun, 22-Oct-2028 18:42:32 GMT; Domain=.yandex.com; Path=/; Secure; HttpOnly; SameSite=None",
+  "yandexuid=4107167281792780952; Expires=Sun, 22-Oct-2028 18:42:32 GMT; Domain=.yandex.com; Path=/; Secure; SameSite=None",
+  "yashr=514171801792780952; Path=/; Domain=.yandex.com; Expires=Sat, 23 Oct 2027 18:42:32 GMT; SameSite=None; Secure; HttpOnly; Partitioned",
+  "bh=YJjV7tYGah7cyuH/CJLYobEDn8/h6gP7+vDnDev//fYPpJjNhwg=; Path=/; Domain=.yandex.com; Expires=Sat, 27 Nov 2027 18:42:32 GMT; SameSite=None; Secure"
+ ]
+}
+
