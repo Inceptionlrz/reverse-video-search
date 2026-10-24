@@ -1,5 +1,6 @@
 // 任务域路由：建任务（multipart 文件 / JSON 路径或 URL）、列表、详情、确认、抽帧、控制、删除。
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { readBody, sendFail, sendOk } from '../lib/server/json.mjs';
 import { readMultipart } from '../lib/http/multipart-read.mjs';
 import { badRequest } from '../lib/errors.mjs';
@@ -12,7 +13,10 @@ export function registerTaskRoutes(router, ctx) {
     const contentType = String(req.headers['content-type'] || '');
     let input;
     if (contentType.startsWith('multipart/form-data')) {
-      const uploadDir = path.join(ctx.cfg.dataDir, 'uploads', `u_${Date.now()}`);
+      // 暂存目录除时间戳外必须带随机段：u_<ts> 与 <ts>_<file> 两级命名都只依赖
+      // Date.now()，同毫秒内的并发上传会共用同一路径——后一个覆盖前一个，且
+      // 删除其中一个任务时会连带删掉另一个任务的源文件（清理按路径判定）。
+      const uploadDir = path.join(ctx.cfg.dataDir, 'uploads', `u_${Date.now()}_${randomUUID().slice(0, 8)}`);
       const { fields, files } = await readMultipart(req, { uploadDir });
       const file = files[0];
       if (!file) throw badRequest('multipart 中未找到文件');

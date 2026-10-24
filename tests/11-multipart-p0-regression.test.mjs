@@ -226,4 +226,47 @@ describe('multipart 上传端到端与删除清理（commit 0f6494f / adb98f9）
     await api.del(`/api/tasks/${taskId}`);
     assert.ok(fs.existsSync(userVideo), '删除任务不得删除 uploads 之外的用户源视频（路径前缀守卫）');
   });
+
+  test('E4：并发上传——暂存目录与源文件路径互不冲突（路径唯一性守卫）', async (t) => {
+    const { cfg, tmp } = makeOfflineConfig();
+    const app = await startApp(cfg);
+    t.after(async () => { await app.close().catch(() => {}); });
+
+    const dir = fs.mkdtempSync(path.join(tmp, 'src-'));
+    const source = await makeTinyVideo(dir);
+    const sourceBytes = fs.readFileSync(source);
+    const port = app.server.address().port;
+
+    // 暂存目录曾写作 u_<Date.now()>、文件名 <Date.now()>_<file>：两级都只依赖
+    // 毫秒时钟，同毫秒内的突发上传会共用同一路径——后一个覆盖前一个，且删除
+    // 其中一个任务会连带删掉另一个任务的源文件（清理按路径前缀判定）。
+    const bodyOf = (i) => buildMultipart([
+      { name: 'file', filename: 'tiny.mp4', contentType: 'video/mp4', body: sourceBytes },
+      { name: 'title', body: `并发${i}` },
+    ]);
+    const results = await Promise.all(
+      Array.from({ length: 5 }, (_, i) =>
+        postRaw(port, '/api/file-upload', bodyOf(i + 1), `multipart/form-data; boundary=${BOUNDARY}`))
+    );
+
+    results.forEach((r, i) => {
+      assert.equal(r.status, 201, `第 ${i + 1} 个并发上传应成功，实际 ${r.status}：${r.text.slice(0, 200)}`);
+    });
+
+    const sourcePaths = results.map((r) => r.json.data.task.source_path);
+    const stagingDirs = sourcePaths.map((p) => path.dirname(p));
+
+    assert.equal(new Set(sourcePaths).size, 5, '5 次并发上传的源文件路径必须互不相同');
+    assert.equal(new Set(stagingDirs).size, 5, '5 次并发上传的暂存目录必须互不相同');
+
+    // 目录名必须带随机段：u_<毫秒时间戳>_<8 位十六进制>，纯时间戳不足以防碰撞
+    stagingDirs.forEach((p, i) => {
+      assert.match(path.basename(p), /^u_\d+_[0-9a-f]{8}$/, `第 ${i + 1} 个暂存目录名应含随机段，实际 ${path.basename(p)}`);
+    });
+
+    sourcePaths.forEach((p, i) => {
+      assert.ok(fs.existsSync(p), `第 ${i + 1} 个上传文件应落盘：${p}`);
+      assert.equal(fs.readFileSync(p).length, sourceBytes.length, `第 ${i + 1} 个上传文件字节数应等于源文件`);
+    });
+  });
 });
