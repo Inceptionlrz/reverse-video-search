@@ -46,6 +46,7 @@ export async function readMultipart(req, options = {}) {
   let state = 'preamble'; // preamble → headers → body → done
   let current = null; // { headers, chunks, bytes, stream, path }
   let tooLarge = false;
+  const pending = []; // 待落盘完成的 promise，返回前必须全部 await
 
   const append = (chunk) => {
     buf = buf.length ? Buffer.concat([buf, chunk]) : chunk;
@@ -91,7 +92,20 @@ export async function readMultipart(req, options = {}) {
   const endPart = () => {
     if (!current) return;
     if (current.isFile) {
-      current.stream.end();
+      // 落盘是异步的：createWriteStream 的 fd 是异步打开、write 是排队写入的，
+      // 只调 end() 就返回会让调用方（建任务 → ffprobe）读到尚未落盘/未关闭的
+      // 文件——ENOENT 或半截文件，属间歇性上传失败的竞态。必须等句柄 close。
+      pending.push(
+        new Promise((resolve) => {
+          current.stream.once('close', resolve);
+          try {
+            current.stream.end();
+          } catch {
+            // 已销毁（如超限被 destroy）时 end() 可能抛错，close 仍会到达
+            resolve();
+          }
+        }),
+      );
       files.push({
         field: current.name,
         filename: current.filename,
@@ -202,6 +216,7 @@ export async function readMultipart(req, options = {}) {
   }
   processBuffer(true);
   if (state !== 'done') fail('multipart 数据不完整');
+  await Promise.all(pending);
   return { fields, files };
 }
 
