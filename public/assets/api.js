@@ -125,7 +125,10 @@ export const api = {
   },
 
   listTasks: (o) => request('/api/tasks', { query: q(o) }),
-  getTask: (id) => request(`/api/tasks/${encodeURIComponent(id)}`),
+  // GET /api/tasks/:id 的信封 data 是 { task }——必须在这里剥掉，
+  // 否则视图拿到包装对象，页头/按钮/横幅全部读到 undefined（状态显示「未知」、
+  // 操作按钮集体消失、未确认横幅误报）。
+  getTask: async (id) => (await request(`/api/tasks/${encodeURIComponent(id)}`)).task,
   deleteTask: (id) => request(`/api/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
   confirmTask: (id, scope) => request(`/api/tasks/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: scope }),
