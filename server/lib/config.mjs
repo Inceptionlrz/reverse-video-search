@@ -44,7 +44,9 @@ export function loadConfig(env = process.env, root = REPO_ROOT) {
   if (!assertLoopback(hostRaw)) {
     throw new Error(`RVS_HOST=${hostRaw} 不是回环地址；本服务只允许绑定 127.0.0.1 / localhost / ::1，拒绝启动（SPEC §0.5 / EARS #24）`);
   }
-  const host = hostRaw;
+  // 校验与存储用同一归一化值：只整理合法回环值的形态（大小写/首尾空白），
+  // 与"把非回环值静默替换成 127.0.0.1"有本质区别——后者已在上面拒绝启动。
+  const host = String(hostRaw).trim().toLowerCase();
   const dataDir = path.resolve(env.RVS_DATA_DIR || path.join(root, 'data'));
 
   const cfg = {
