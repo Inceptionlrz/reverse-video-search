@@ -36,10 +36,19 @@ export async function controlTask(taskId, action, onDone) {
 }
 
 /** 外发确认 → 授权 → 发起检索。整条链必须在用户勾选后才推进。 */
-export function runAnalysesFlow({ taskId, engines, enabledFrames, onDone }) {
+export async function runAnalysesFlow({ taskId, engines, enabledFrames, onDone }) {
+  // 弹窗必须反映设置现状：图床总开关关了还让用户勾桥接，勾了也白勾
+  // （执行层会以「未选择图床站点」跳过，21 个组合无声全手动——实跑踩过）。
+  let imagehost = null;
+  try {
+    imagehost = (await api.settings()).writable?.imagehost || null;
+  } catch {
+    imagehost = null; // 读不到设置时按「未知」处理，不阻断确认流程
+  }
   return consentModal({
     task: { frames_done: enabledFrames },
     engines,
+    imagehost,
     onConfirm: async (scope) => {
       try {
         await api.confirmTask(taskId, scope);

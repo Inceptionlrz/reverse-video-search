@@ -151,7 +151,7 @@ export function resultRow(result, { selected = false, onSelect } = {}) {
 export const resultsSkeleton = (n = 5) => skeletonResults(n);
 
 /* ===== 外发确认弹窗（UIUX §16：警示级，复选框默认不勾选，主按钮含具体查询次数） ===== */
-export function consentModal({ task, engines, onConfirm }) {
+export function consentModal({ task, engines, imagehost, onConfirm }) {
   const frameCount = Math.max(1, Number(task?.frames_done) || 1);
   const engineIds = (engines || []).filter((e) => e.enabled).map((e) => e.id);
   const total = frameCount * Math.max(1, engineIds.length);
@@ -164,6 +164,21 @@ export function consentModal({ task, engines, onConfirm }) {
     h('option', { value: '', text: '选择站点' }), h('option', { value: 'catbox', text: 'catbox' }), h('option', { value: '0x0', text: '0x0.st' }), h('option', { value: 'tmpfiles', text: 'tmpfiles' }));
   checks.bridge.addEventListener('change', () => { hostSelect.disabled = !checks.bridge.checked; if (!checks.bridge.checked) host = null; });
   hostSelect.addEventListener('change', () => { host = hostSelect.value || null; });
+
+  // 桥接行的可用性必须与设置一致：总开关关了 → 禁用并说明原因；
+  // 开了但没选默认站点 → 允许在弹窗里现选（仅本次生效），并明说这一点。
+  const bridgeOn = imagehost?.enabled === true;
+  const bridgeHint = !imagehost
+    ? '无法读取图床设置，桥接可能不可用。'
+    : !bridgeOn
+      ? '设置页已关闭图床桥接，勾选不会生效；需要先到设置页打开。'
+      : imagehost.provider
+        ? `默认站点：${imagehost.provider}（可在此处改为其他站点，仅本次生效）。`
+        : '设置页未选默认站点——在此处选择一个站点即可，仅对本任务生效。';
+  if (!bridgeOn) {
+    checks.bridge.disabled = true;
+    hostSelect.disabled = true;
+  }
 
   const submit = () => {
     if (!checks.engines.checked) { toast('必须勾选「允许发送到搜索引擎」才能继续', 'warn'); return; }
@@ -185,7 +200,7 @@ export function consentModal({ task, engines, onConfirm }) {
             h('span', { class: 'settings-row__desc', text: engineIds.length ? engineIds.map(engineLabel).join('、') : '当前没有已启用的引擎' }))),
         h('label', { class: 'checkbox' }, checks.bridge,
           h('span', {}, h('span', { class: 'settings-row__label', text: '允许图床桥接' }),
-            h('span', { class: 'settings-row__desc', text: '先把帧临时上传到图床拿公网 URL，再送引擎。图床侧同样可能留存文件。' }))),
+            h('span', { class: 'settings-row__desc', text: `先把帧临时上传到图床拿公网 URL，再送引擎。图床侧同样可能留存文件。${bridgeHint}` }))),
         h('div', { class: 'row' }, h('span', { class: 'field__label', text: '图床站点' }), hostSelect)),
       h('div', { class: 'consent-ack' }, icon('lock', 14), h('span', { text: '不勾选任何一项时，帧只会留在本机：你可以只抽帧、只算本地哈希，或使用下面的「仅本机抽帧，不外发」直接离开。' })),
     ],

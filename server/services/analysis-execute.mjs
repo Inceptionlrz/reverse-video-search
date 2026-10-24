@@ -166,8 +166,13 @@ export function createExecutor(deps) {
       }
 
       // [3] bridge 图床桥接（设置开 + 单任务确认 + 已选站点 + 引擎支持深链）
+      // 站点解析：单任务授权（确认弹窗里选的）优先，设置页的默认站点兜底。
+      // 曾在此处只读 settings.provider——用户在弹窗里选了站点也会被无视，
+      // 全部组合无声降级为 manual，是「21 个组合全手动」的直接原因之一。
       const consent = await loadConsent(task.id);
-      const hostId = settings.imagehost.enabled ? settings.imagehost.provider : null;
+      const hostId = settings.imagehost.enabled
+        ? (consent?.imagehost || settings.imagehost.provider)
+        : null;
       const bridgeAllowed = Boolean(hostId) && Boolean(consent?.bridge) && provider.availability.bridge !== 'unavailable';
       if (bridgeAllowed) {
         const up = await runBridge(ctx, hostId, frame, analysisId, log);
@@ -186,11 +191,13 @@ export function createExecutor(deps) {
           lastError = up;
         }
       } else {
-        const reason = !hostId
-          ? '未选择图床站点（设置页三选一）'
-          : !consent?.bridge
-            ? '本任务未确认图床桥接（需在任务确认弹窗中单独授权）'
-            : '该引擎的桥接路径实测不可用';
+        const reason = !settings.imagehost.enabled
+          ? '图床桥接已在设置页关闭'
+          : !hostId
+            ? '未选择图床站点（可在确认弹窗勾选桥接时选择，或到设置页设默认站点）'
+            : !consent?.bridge
+              ? '本任务未确认图床桥接（需在任务确认弹窗中单独授权）'
+              : '该引擎的桥接路径实测不可用';
         log.push({ step: 'bridge', skipped: true, reason });
       }
 
