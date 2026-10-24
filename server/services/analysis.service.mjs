@@ -43,6 +43,7 @@ export function createAnalysisService(deps) {
     metrics,
     cancelTokens,
     settingsService,
+    loadConsent,
   });
 
   async function loadConsent(taskId) {

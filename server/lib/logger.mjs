@@ -7,10 +7,13 @@ const RING_CAPACITY = 2000;
 
 const SENSITIVE_KEY = /(key|token|secret|password|passwd|credential|authorization|cookie|signature|apikey|api_key)/i;
 const URL_USERINFO = /([a-z][a-z0-9+.-]*:\/\/)([^/@\s]+)@/gi;
+// Authorization 头被整体回显进日志正文时的兜底：Bearer <凭据> 形态无歧义，误伤面小。
+// 键名脱敏只覆盖「有键名」的字段，数组元素等裸串走不到那条分支，故在此补一道。
+const BEARER = /(Bearer\s+)[A-Za-z0-9._~+/=-]+/gi;
 
 export function redactText(text) {
   if (typeof text !== 'string') return text;
-  return text.replace(URL_USERINFO, '$1***@');
+  return text.replace(URL_USERINFO, '$1***@').replace(BEARER, '$1[redacted]');
 }
 
 export function redactValue(value) {

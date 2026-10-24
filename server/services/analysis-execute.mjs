@@ -21,6 +21,9 @@ export function createExecutor(deps) {
   const {
     tasksRepo, framesRepo, analysesRepo, engineHealthRepo,
     engines, imageHosts, resultService, health, logger, metrics, cancelTokens, settingsService,
+    // 单任务授权读取器：consent 存在 settings 表但读取逻辑归 analysis.service，
+    // 执行层只接受注入，不自己拼 key，避免两处各写一份造成偏移。
+    loadConsent,
   } = deps;
   const cfg = getConfig();
 
@@ -163,7 +166,7 @@ export function createExecutor(deps) {
       }
 
       // [3] bridge 图床桥接（设置开 + 单任务确认 + 已选站点 + 引擎支持深链）
-      const consent = await settingsService.loadConsent(task.id);
+      const consent = await loadConsent(task.id);
       const hostId = settings.imagehost.enabled ? settings.imagehost.provider : null;
       const bridgeAllowed = Boolean(hostId) && Boolean(consent?.bridge) && provider.availability.bridge !== 'unavailable';
       if (bridgeAllowed) {
