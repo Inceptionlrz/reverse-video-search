@@ -70,6 +70,9 @@ export function createStaticHandler({ staticDir, framesDir, thumbsDir }) {
       }
       return serveFile(req, res, filePath);
     }
+    // API 前缀未命中任何路由：交回 app.mjs 输出 404 JSON 信封，禁被 SPA 兜底吞成 HTML
+    // （前端 fetch 到错误端点会拿到 HTML，.json() 直接崩——2026-10-24 live 验证查出）。
+    if (pathname === '/api' || pathname.startsWith('/api/')) return false;
     if (!staticDir) return false;
     const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
     const filePath = safeJoin(staticDir, relative);

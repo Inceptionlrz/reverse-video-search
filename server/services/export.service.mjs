@@ -76,7 +76,9 @@ export function toJson(results, { filters = {}, appVersion = '1.0.0' } = {}) {
       schema_version: 1,
       app_version: appVersion,
       generated_at: new Date().toISOString(),
-      score_note: '线索分由引擎名次映射，本地哈希相似度由 dHash 实算；均非概率或准确性度量',
+      // PRD EARS #17b 要求免责声明必须写明「不代表来源真实性概率」——否定语境中的「概率」是规范强制用语；
+      // 被禁的是把分数*表述为*概率（匹配度/置信度/准确率/命中概率），故保留否定句、不出现禁用词。
+      score_note: '线索分由引擎名次映射，本地哈希相似度由 dHash 实算；仅用于排序，不代表来源真实性概率，需人工核验',
       filters,
       total: items.length,
       items,

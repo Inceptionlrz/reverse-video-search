@@ -93,7 +93,7 @@ export function validateSettings(patch) {
 // 只读镜像：把启动环境变量整理成 UI 可展示的形态。
 export function readOnlySettings(cfg = getConfig()) {
   return {
-    server: { host: cfg.host, port: cfg.port, host_overridden: cfg.hostOverridden },
+    server: { host: cfg.host, port: cfg.port },
     network: {
       proxy: cfg.proxy || null,
       proxy_note: cfg.proxy ? '出站经本地代理' : '出站为直连',

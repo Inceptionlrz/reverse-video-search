@@ -7,7 +7,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const SERVER_ROOT = path.resolve(HERE, '..');
 export const REPO_ROOT = path.resolve(SERVER_ROOT, '..');
 
-// 合规红线：只允许回环地址。任何非回环值一律强制回落到 127.0.0.1。
+// 合规红线：只允许回环地址。非回环值直接拒绝加载（启动自检失败即退出，不静默改写——EARS #24）。
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 
 export function assertLoopback(host) {
@@ -41,13 +41,15 @@ function readBool(env, key, fallback) {
 
 export function loadConfig(env = process.env, root = REPO_ROOT) {
   const hostRaw = env.RVS_HOST || '127.0.0.1';
-  const host = assertLoopback(hostRaw) ? hostRaw : '127.0.0.1';
+  if (!assertLoopback(hostRaw)) {
+    throw new Error(`RVS_HOST=${hostRaw} 不是回环地址；本服务只允许绑定 127.0.0.1 / localhost / ::1，拒绝启动（SPEC §0.5 / EARS #24）`);
+  }
+  const host = hostRaw;
   const dataDir = path.resolve(env.RVS_DATA_DIR || path.join(root, 'data'));
 
   const cfg = {
     root,
     host,
-    hostOverridden: host !== hostRaw,
     port: readInt(env, 'RVS_PORT', 4173),
     proxy: (env.RVS_PROXY === undefined ? 'http://127.0.0.1:7897' : env.RVS_PROXY).trim(),
     dataDir,
