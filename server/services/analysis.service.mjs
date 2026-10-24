@@ -5,6 +5,7 @@
 import { newAnalysisId } from '../lib/ids.mjs';
 import { badRequest, consentRequired, notFound } from '../lib/errors.mjs';
 import { isEngineRunnable } from '../providers/registry.mjs';
+import { createCancelToken } from '../lib/queue/token.mjs';
 import { createExecutor } from './analysis-execute.mjs';
 
 const CONSENT_KEY = (taskId) => `consent:${taskId}`;
@@ -132,6 +133,11 @@ export function createAnalysisService(deps) {
       }
     }
 
+    // 注册本次检索的取消令牌：analysis-execute 每轮取 cancelTokens.get(task.id)
+    // 挂到 HTTP 请求上，没有这一步 cancel 就是空转（在飞请求不会被中断）。
+    // 复用已有令牌会让「取消后重新检索」立刻被旧令牌杀掉，故每轮都换新。
+    cancelTokens.set(taskId, createCancelToken());
+
     await tasksRepo.update(taskId, { status: 'analyzing', phase: 'analyzing', analyses_total: rows.length, analyses_done: 0 });
     const enqueued = await enqueue(rows);
     logger.info('analysis', 'run', `已提交 ${rows.length} 个分析作业（入队 ${enqueued}）`, { task_id: taskId, providers: providerIds });
@@ -168,7 +174,11 @@ export function createAnalysisService(deps) {
     }
     if (action === 'cancel') {
       const token = cancelTokens.get(taskId);
-      if (token) token.abort('user cancelled');
+      if (token) {
+        token.abort('user cancelled');
+        // 令牌已用尽，移除；下次 run 会换发一个新令牌，避免旧令牌误杀重跑。
+        cancelTokens.delete(taskId);
+      }
       const queued = await analysesRepo.listByStatus(['queued', 'running'], { limit: 2000 });
       let n = 0;
       for (const row of queued) {

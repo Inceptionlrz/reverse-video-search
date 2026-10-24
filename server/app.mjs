@@ -76,7 +76,9 @@ export async function createApp(options = {}) {
     settingsRepo: repos.settings,
   };
   const taskService = createTaskService({ ...repoDeps, logger });
-  const frameService = createFrameService({ tasksRepo: repos.tasks, framesRepo: repos.frames, logger });
+  // cancelTokens 由帧服务与分析服务共享：取消必须同时能中断抽帧的 ffmpeg
+  // 与检索的在飞 HTTP，否则 control{cancel} 只是改数据库状态。
+  const frameService = createFrameService({ tasksRepo: repos.tasks, framesRepo: repos.frames, logger, cancelTokens });
   const resultService = createResultService({ ...repoDeps, db, logger, settingsService });
   const exportService = createExportService();
   const logsService = createLogsService();

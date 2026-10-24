@@ -14,6 +14,7 @@ import {
   mergeTimes,
 } from '../lib/media/extract.mjs';
 import { dhashOfFile, groupByHamming } from '../lib/media/hash.mjs';
+import { createCancelToken } from '../lib/queue/token.mjs';
 
 // JPEG SOF 维度读取：避免每帧多调一次 ffprobe。
 export function jpegSize(buffer) {
@@ -40,7 +41,10 @@ export function jpegSize(buffer) {
   return null;
 }
 
-export function createFrameService({ tasksRepo, framesRepo, logger }) {
+export function createFrameService({ tasksRepo, framesRepo, logger, cancelTokens }) {
+  // 取消令牌表由 app.mjs 统一持有并与分析服务共享：抽帧与分析都靠它中断 ffmpeg / HTTP。
+  // 缺省给一个私有 Map，便于单测与冒烟脚本独立构造帧服务。
+  const tokens = cancelTokens || new Map();
   const cfg = getConfig();
 
   function frameDirOf(taskId) {
@@ -84,6 +88,11 @@ export function createFrameService({ tasksRepo, framesRepo, logger }) {
     fs.mkdirSync(outDir, { recursive: true });
     await framesRepo.deleteByTask(taskId);
 
+    // 注册本次抽帧的取消令牌：没有它，control{cancel} 只能改数据库状态，
+    // ffmpeg 会继续跑完并把状态翻回 frames_ready——用户点了取消却拿到满帧。
+    const token = createCancelToken();
+    tokens.set(taskId, token);
+
     try {
       const meta = await probeMedia(cfg, source);
       const entries = await produceFrames(taskId, source, outDir, {
@@ -92,7 +101,19 @@ export function createFrameService({ tasksRepo, framesRepo, logger }) {
         intervalMs,
         sceneThreshold,
         durationMs: meta.duration_ms,
+        cancelToken: token,
       });
+
+      // 抽帧过程本身被中断时 spawnBinary 会抛错，但为防竞态（取消恰好落在最后一帧之后），
+      // 这里再判一次：已取消就不落库、不改 frames_ready，保持 cancelled。
+      if (token.isCancelled) {
+        // 取消就该什么都不留：ffmpeg 被杀时可能已写出半成品 JPEG，一并清除，
+        // 否则帧目录里躺着用户从没确认过的残留文件（下次抽帧才会被覆盖）。
+        fs.rmSync(outDir, { recursive: true, force: true });
+        await tasksRepo.update(taskId, { status: 'cancelled', phase: 'cancelled', ffmpeg_error: '用户取消' });
+        logger.info('frame', 'extract_cancelled', '抽帧被用户取消，丢弃已产出帧', { task_id: taskId, discarded: entries.length });
+        return { frames: 0, mode, cancelled: true };
+      }
 
       const rows = [];
       for (const entry of entries) {
@@ -137,9 +158,18 @@ export function createFrameService({ tasksRepo, framesRepo, logger }) {
       return { frames: rows.length, mode };
     } catch (err) {
       const message = String(err.stderr || err.message || err).slice(-2000);
+      // 取消引发的中断不是失败：状态必须是 cancelled，否则用户看到「失败」却没做错任何事。
+      if (token.isCancelled) {
+        fs.rmSync(outDir, { recursive: true, force: true });
+        await tasksRepo.update(taskId, { status: 'cancelled', phase: 'cancelled', ffmpeg_error: '用户取消' });
+        logger.info('frame', 'extract_cancelled', '抽帧被用户取消，ffmpeg 已终止', { task_id: taskId });
+        return { frames: 0, mode, cancelled: true };
+      }
       await tasksRepo.update(taskId, { status: 'failed', phase: 'failed', ffmpeg_error: message });
       logger.error('frame', 'extract_failed', `抽帧失败：${err.message}`, { task_id: taskId });
       return { frames: 0, mode, error: message };
+    } finally {
+      if (tokens.get(taskId) === token) tokens.delete(taskId);
     }
   }
 
@@ -148,7 +178,7 @@ export function createFrameService({ tasksRepo, framesRepo, logger }) {
     return runExtract(taskId, opts);
   }
 
-  async function produceFrames(taskId, source, outDir, { mode, maxFrames, intervalMs, sceneThreshold, durationMs }) {
+  async function produceFrames(taskId, source, outDir, { mode, maxFrames, intervalMs, sceneThreshold, durationMs, cancelToken }) {
     const entries = [];
     if (mode === 'interval') {
       const res = await extractInterval(cfg, {
@@ -159,6 +189,7 @@ export function createFrameService({ tasksRepo, framesRepo, logger }) {
         durationMs,
         width: cfg.extract.targetWidth,
         quality: cfg.extract.jpegQuality,
+        cancelToken,
       });
       res.files.forEach((file, index) => {
         const seq = index + 1;
@@ -172,9 +203,9 @@ export function createFrameService({ tasksRepo, framesRepo, logger }) {
     let times = [];
     let strategy = mode;
     if (mode === 'scene') {
-      times = (await detectScenes(cfg, { source, threshold: sceneThreshold })).slice(0, maxFrames);
+      times = (await detectScenes(cfg, { source, threshold: sceneThreshold, cancelToken })).slice(0, maxFrames);
     } else {
-      const sceneTimes = await detectScenes(cfg, { source, threshold: sceneThreshold });
+      const sceneTimes = await detectScenes(cfg, { source, threshold: sceneThreshold, cancelToken });
       times = mergeTimes(sceneTimes, durationMs || 0, maxFrames, intervalMs);
     }
     if (!times.length) {
@@ -187,6 +218,7 @@ export function createFrameService({ tasksRepo, framesRepo, logger }) {
         durationMs,
         width: cfg.extract.targetWidth,
         quality: cfg.extract.jpegQuality,
+        cancelToken,
       });
       res.files.forEach((file, index) => {
         const seq = index + 1;
@@ -208,6 +240,7 @@ export function createFrameService({ tasksRepo, framesRepo, logger }) {
         timeMs,
         width: cfg.extract.targetWidth,
         quality: cfg.extract.jpegQuality,
+        cancelToken,
       });
       entries.push({ seq, timeMs, filePath });
     }
