@@ -219,5 +219,22 @@ export function createAnalysisService(deps) {
     return loadConsent(taskId);
   }
 
-  return { run, get, listByTask, control, resumeQueued, recordConsent, executor, metrics, cancelTokens };
+  // 启动自愈：把「status=analyzing 但已无 queued/running 作业」的任务收敛为 done。
+  // 终态收敛逻辑上线前遗留的任务会永远卡在 analyzing（当时没有任何代码写 done），
+  // 而收敛只在新作业落终态时触发，治不了存量——重启时扫一遍补齐。
+  async function settleStalledTasks() {
+    const { items } = await tasksRepo.list({ status: 'analyzing', limit: 100 });
+    let settled = 0;
+    for (const task of items) {
+      const pending = await analysesRepo.countPendingByTask(task.id);
+      if (pending > 0) continue;
+      await tasksRepo.update(task.id, { status: 'done', phase: 'done' });
+      settled += 1;
+      logger.info('task', 'settled_stalled', '启动自愈：无未完成作业的任务已收敛为完成', { task_id: task.id });
+    }
+    if (settled) logger.info('task', 'settled_stalled_summary', `共收敛 ${settled} 个卡死的分析中任务`);
+    return settled;
+  }
+
+  return { run, get, listByTask, control, resumeQueued, settleStalledTasks, recordConsent, executor, metrics, cancelTokens };
 }

@@ -147,6 +147,7 @@ export async function createApp(options = {}) {
     async listen() {
       this.assertBindAddress();
       await analysisService.resumeQueued(); // 断点恢复：重启后拾起排队项（调度层过滤停用引擎）
+      await analysisService.settleStalledTasks(); // 启动自愈：收敛修复前遗留的「 analyzing 但无未完成作业」任务
       return new Promise((resolve, reject) => {
         server.once('error', reject);
         server.listen(cfg.port, cfg.host, () => {
