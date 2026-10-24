@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<title>反向视频溯源 · 溯源工作台</title>
+<meta name="description" content="把本地视频拆成关键帧，逐帧送进公开反向图片引擎，汇总可能的原始出处。帧不出本机之外发范围由你逐次确认。" />
+<link rel="stylesheet" href="/assets/app.css" />
+<link rel="stylesheet" href="/assets/components.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">跳到主内容</a>
+
+  <!-- 图标 sprite 的唯一来源是 assets/sprite.js，在模块求值期注入 DOM（54 个 symbol）。
+       壳层（TopBar / SideBar）直接用 <use href="#rvs-icon-*">，SVG 2 的 <use> 为动态解析，
+       后注入亦可正常渲染；禁用 JS 时由下面的 noscript 兜底。 -->
+
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand__mark" width="20" height="20" aria-hidden="true" focusable="false"><use href="#rvs-icon-search-image" /></svg>
+      <span class="brand__name">反向视频溯源</span>
+      <span class="brand__ver">v1.0.0</span>
+    </div>
+    <div class="topbar__center" id="engine-strip" aria-label="引擎健康快照"></div>
+    <div class="topbar__right">
+      <span class="net-indicator" id="net-indicator" hidden>
+        <svg width="16" height="16" aria-hidden="true" focusable="false"><use href="#rvs-icon-cloud-off" /></svg>
+        <span>离线</span>
+      </span>
+      <button class="icon-btn" id="privacy-btn" type="button" aria-expanded="false" aria-label="外发与隐私说明">
+        <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#rvs-icon-shield" /></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="app__body">
+    <nav class="sidebar" id="sidebar" aria-label="主导航">
+      <a class="nav-item" href="/" data-route="/">
+        <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#rvs-icon-upload" /></svg>
+        <span class="nav-item__label">溯源工作台</span>
+      </a>
+      <a class="nav-item" href="/results" data-route="/results">
+        <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#rvs-icon-layers" /></svg>
+        <span class="nav-item__label">结果总览</span>
+      </a>
+      <a class="nav-item" href="/engines" data-route="/engines">
+        <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#rvs-icon-target" /></svg>
+        <span class="nav-item__label">引擎诊断</span>
+      </a>
+      <a class="nav-item" href="/logs" data-route="/logs">
+        <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#rvs-icon-list" /></svg>
+        <span class="nav-item__label">运行日志</span>
+      </a>
+      <a class="nav-item" href="/settings" data-route="/settings">
+        <svg width="20" height="20" aria-hidden="true" focusable="false"><use href="#rvs-icon-settings" /></svg>
+        <span class="nav-item__label">设置</span>
+      </a>
+      <div class="sidebar__foot">
+        <svg width="16" height="16" aria-hidden="true" focusable="false"><use href="#rvs-icon-lock" /></svg>
+        <span>仅本机访问</span>
+      </div>
+    </nav>
+
+    <main class="main" id="main" tabindex="-1">
+      <noscript>
+        <div class="panel panel--pad" style="margin:24px">
+          <h1 class="page-title">需要启用 JavaScript</h1>
+          <p class="page-sub">本工具的抽帧、检索与导出全部在本地进程内完成，界面依赖浏览器 JavaScript。</p>
+        </div>
+      </noscript>
+      <div id="view-root" class="view-root"></div>
+    </main>
+  </div>
+
+  <footer class="statusbar" id="statusbar" aria-label="运行状态">
+    <div class="statusbar__left" id="status-left"></div>
+    <div class="statusbar__center" id="status-center"></div>
+    <div class="statusbar__right" id="status-right"></div>
+  </footer>
+</div>
+
+<div class="toast-stack" id="toast-root" aria-live="polite" aria-atomic="false"></div>
+<div id="modal-root"></div>
+<div id="popover-root"></div>
+
+<script type="module" src="/assets/app.js"></script>
+</body>
+</html>
