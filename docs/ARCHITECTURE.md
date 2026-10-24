@@ -407,9 +407,15 @@ task (1) ──► frames (N) ──► analyses (N × 选中引擎数 ≤ 3)
 |---|---|---|---|
 | `pause` | 允许当前请求跑完并写结果，不再取下一个 | 保留在队列，状态挂起 | `tasks.status='paused'` |
 | `resume` | — | 重新入队，从最早未完成的 analysis 继续 | `tasks.status='running'` |
-| `cancel` | 通过取消令牌 abort socket 与 ffmpeg 子进程（`SIGKILL` on Windows：`taskkill /PID`，优先尝试 `proc.kill()`） | 全部置 `cancelled` | `tasks.status='cancelled'`，已完成的结果**保留**可读 |
+| `cancel` | 通过取消令牌 abort socket 与 ffmpeg 子进程（`spawnBinary` 内 `child.kill()`，见 `lib/media/probe.mjs`） | 全部置 `cancelled` | `tasks.status='cancelled'`，已完成的结果**保留**可读 |
 
 取消后 `tasks.status` 进入终态，不得再接收 `pause`/`resume`（返回 `CONFLICT`）。已完成的分析结果即使任务被取消也保留，导出接口仍可导出这部分。
+
+**取消令牌的注册责任**（实现约束，曾在此处出过 P1）：`cancelTokens` 由 `app.mjs` 统一持有，帧服务与分析服务共享。
+- `frameService.runExtract` 必须 `set` 本轮令牌并贯穿 `extractInterval` / `detectScenes` / `extractAtTime`，结束时按引用比对摘除。否则 `control{cancel}` 只改数据库状态，ffmpeg 会跑完并把状态翻回 `frames_ready`。
+- `analysisService.run` 每轮**换发**新令牌，`control('cancel')` 用完即删——否则取消后重新检索会被旧令牌立刻杀掉。
+
+**抽帧被取消的落库约定**：状态记 `cancelled` 且 `ffmpeg_error='用户取消'`，**不是** `failed`（用户没做错任何事）；取消即清除 `outDir`，不留半成品 JPEG。真实失败仍记 `failed`，两者不得混淆（由 `tests/12` 的 T2/T3 分别锁定）。
 
 ### 9.3 幂等
 
