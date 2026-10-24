@@ -36,19 +36,23 @@ export async function controlTask(taskId, action, onDone) {
 }
 
 /** 外发确认 → 授权 → 发起检索。整条链必须在用户勾选后才推进。 */
-export async function runAnalysesFlow({ taskId, engines, enabledFrames, onDone }) {
+export async function runAnalysesFlow({ taskId, task, engines, enabledFrames, onDone }) {
   // 弹窗必须反映设置现状：图床总开关关了还让用户勾桥接，勾了也白勾
   // （执行层会以「未选择图床站点」跳过，21 个组合无声全手动——实跑踩过）。
-  let imagehost = null;
+  let writable = null;
   try {
-    imagehost = (await api.settings()).writable?.imagehost || null;
+    writable = (await api.settings()).writable || null;
   } catch {
-    imagehost = null; // 读不到设置时按「未知」处理，不阻断确认流程
+    writable = null; // 读不到设置时按「未知」处理，不阻断确认流程
   }
   return consentModal({
     task: { frames_done: enabledFrames },
     engines,
-    imagehost,
+    imagehost: writable?.imagehost || null,
+    engineModes: writable?.engines || {},
+    // 只有 URL 来源的任务才可能有公网图片地址；本地视频抽出来的帧没有，
+    // 深链那一级必然跳过——这一条必须在弹窗里就说清，别等跑完才发现。
+    publicUrl: task?.source_type === 'url' ? (task.source_url || null) : null,
     onConfirm: async (scope) => {
       try {
         await api.confirmTask(taskId, scope);

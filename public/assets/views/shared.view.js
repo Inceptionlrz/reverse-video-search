@@ -151,7 +151,79 @@ export function resultRow(result, { selected = false, onSelect } = {}) {
 export const resultsSkeleton = (n = 5) => skeletonResults(n);
 
 /* ===== 外发确认弹窗（UIUX §16：警示级，复选框默认不勾选，主按钮含具体查询次数） ===== */
-export function consentModal({ task, engines, imagehost, onConfirm }) {
+const PRIVATE_HOST = /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|localhost|0\.0\.0\.|::1$)/i;
+
+/**
+ * 公网 HTTP(S) 地址；内网 / 本机 / 非 http 一律判否。
+ * 与服务端 analysis-execute.mjs 的 isPublicHttpUrl 同义——前端拿不到服务端模块，
+ * 只能各写一份，改动其中一处时记得同步另一处。
+ */
+export function publicHttpUrl(value) {
+  try {
+    const u = new URL(value);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    if (PRIVATE_HOST.test(u.hostname)) return null;
+    return u.href;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 各引擎在当前设置下真正会走通的自动路径（纯函数，无 DOM，可单测）。
+ *
+ * 判定顺序与执行层四级链路严格同序（upload → deeplink → bridge → manual），
+ * 只报「当前设置下真正会走通的那一级」。曾有一版只要引擎 bridge 能力不是
+ * unavailable 就一律标「可自动」，结果 Google Lens（bridge=unavailable）
+ * 与 Bing 混在一起显示，用户发起 21 个作业后才发现 Lens 全程手动。
+ *
+ * @returns {Array<{id: string, path: 'upload'|'deeplink'|'bridge'|'bridge_no_site'|'manual', tone: string, label: string}>}
+ */
+export function engineReachability(engines, { imagehost = null, engineModes = {}, publicUrl = null } = {}) {
+  const url = publicHttpUrl(publicUrl); // 内网地址对公网引擎不可达，深链必然跳过
+  return (engines || [])
+    .filter((e) => e && e.enabled)
+    .map((e) => {
+      const av = e.availability || {};
+      const modes = engineModes[e.id] || {};
+      const bridgeCapable = av.bridge !== 'unavailable';
+      const bridgeOn = imagehost?.enabled === true;
+
+      let path = 'manual';
+      if (modes.upload && av.upload !== 'unavailable') path = 'upload';
+      else if (modes.deeplink && av.deeplink !== 'unavailable' && url) path = 'deeplink';
+      else if (bridgeCapable && bridgeOn) path = imagehost.provider ? 'bridge' : 'bridge_no_site';
+
+      const LABEL = {
+        upload: '可自动（直传）',
+        deeplink: '可自动（深链）',
+        bridge: '可自动（图床桥接）',
+        bridge_no_site: '可自动（需在下方选站点）',
+        // bridge 能力还在、只是图床总开关关着 → 明确给出「开了就能自动」，
+        // 而不是干巴巴一句「需手动」，省得用户以为这条路天生走不通。
+        manual: bridgeCapable && !bridgeOn ? '需手动（开启桥接后可自动）' : '需手动跑腿',
+      };
+      return { id: e.id, path, tone: path === 'manual' ? 'warn' : (path === 'bridge_no_site' ? 'idle' : 'ok'), label: LABEL[path] };
+    });
+}
+
+/** 把可达性判定渲染成行：勾选前就能看见哪些引擎只能手动跑腿。 */
+export function engineReachRows(engines, opts = {}) {
+  const rows = engineReachability(engines, opts).map((r) =>
+    h('div', { class: 'consent-row consent-row--sub' },
+      icon(r.path === 'manual' ? 'hand' : 'send', 14, 'muted'),
+      h('span', { class: 'fg2', text: engineLabel(r.id) }),
+      badge(r.label, r.tone)));
+  return rows.length
+    ? h('div', { class: 'stack stack--tight' },
+      h('span', { class: 'settings-row__desc', text: '勾选下方「允许图床桥接」并选择站点后，各引擎的自动可达性：' }),
+      ...rows)
+    : null;
+}
+
+export function consentModal({
+  task, engines, imagehost, engineModes = {}, publicUrl = null, onConfirm,
+}) {
   const frameCount = Math.max(1, Number(task?.frames_done) || 1);
   const engineIds = (engines || []).filter((e) => e.enabled).map((e) => e.id);
   const total = frameCount * Math.max(1, engineIds.length);
@@ -195,6 +267,7 @@ export function consentModal({ task, engines, imagehost, onConfirm }) {
       h('div', { class: 'consent-block' },
         h('div', { class: 'consent-row' }, icon('send', 16), h('strong', { text: `将把 ${frameCount} 帧分别发送到 ${Math.max(1, engineIds.length)} 个引擎` })),
         h('p', { class: 'settings-row__desc', text: '检索以 HTTP 请求发出，请求头由本机直连或经本地代理转出。引擎侧可能记录你的 IP 与时间。' }),
+        engineReachRows(engines, { imagehost, engineModes, publicUrl }),
         h('label', { class: 'checkbox' }, checks.engines,
           h('span', {}, h('span', { class: 'settings-row__label', text: '允许把帧发送到以下搜索引擎' }),
             h('span', { class: 'settings-row__desc', text: engineIds.length ? engineIds.map(engineLabel).join('、') : '当前没有已启用的引擎' }))),

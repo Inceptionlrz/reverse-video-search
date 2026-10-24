@@ -34,6 +34,7 @@ export default {
 
     const runFlow = () => runAnalysesFlow({
       taskId: id,
+      task: state.task,
       engines: state.engines,
       enabledFrames: state.frames.filter((f) => f.enabled).length,
       onDone: loadAll,

@@ -5,7 +5,10 @@ import { SPRITE } from './sprite.js';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // 图标 sprite 在模块求值期注入：早于任何视图渲染，保证首帧即可用 <use> 引用。
-if (!document.getElementById('rvs-sprite-host') && typeof document !== 'undefined') {
+// 守卫顺序不可交换：typeof 检查必须写在左侧，否则无 DOM 的环境（Node 测试里
+// import 本模块）会在求值 document.getElementById 时就抛 ReferenceError，
+// 短路根本走不到右侧的守卫。
+if (typeof document !== 'undefined' && !document.getElementById('rvs-sprite-host')) {
   document.body.insertAdjacentHTML('afterbegin', SPRITE.replace('<svg ', '<svg id="rvs-sprite-host" '));
 }
 

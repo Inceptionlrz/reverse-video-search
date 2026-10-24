@@ -272,3 +272,90 @@ export async function waitForTaskStatus(api, taskId, status, timeoutMs = 60000) 
     { timeoutMs, intervalMs: 200, label: `task ${taskId} status=${status}` },
   );
 }
+
+/* ===== 最小 DOM 桩（供视图层渲染测试使用） =====
+ *
+ * 前端是零依赖原生模块，本仓库不装 jsdom。为了能在 Node 里真正执行一遍渲染函数
+ * （而不是只测纯逻辑），这里手搓一个极小 DOM：只实现 h()/svgEl()/icon()/
+ * applyProps()/appendChildren() 实际用到的那几个 API。
+ *
+ * 它明确不是浏览器替身：没有布局、样式计算、事件冒泡、焦点管理。它能保证的是
+ * 「渲染路径不抛错、节点与文案按预期产出」；不能保证的是「在浏览器里好看」。
+ * 用它的测试不要越界去断言视觉表现。
+ */
+class StubNodeBase {
+  constructor() { this.children = []; this.attrs = {}; }
+  appendChild(child) { this.children.push(child); return child; }
+  removeChild(child) { this.children = this.children.filter((c) => c !== child); return child; }
+  get firstChild() { return this.children[0] || null; }
+}
+
+class StubElement extends StubNodeBase {
+  constructor(tag) {
+    super();
+    this.nodeType = 1;
+    this.tagName = String(tag).toLowerCase();
+    this.style = {};
+    this.dataset = {};
+    this.textContent = '';
+    const attrs = this.attrs;
+    this.classList = {
+      add: (...names) => {
+        const set = new Set(String(attrs.class || '').split(/\s+/).filter(Boolean));
+        for (const n of names) set.add(n);
+        attrs.class = [...set].join(' ');
+      },
+    };
+  }
+  setAttribute(key, value) { this.attrs[key] = String(value); }
+  addEventListener() {}
+  removeEventListener() {}
+  remove() {}
+}
+
+class StubText extends StubNodeBase {
+  constructor(text) { super(); this.nodeType = 3; this.textContent = String(text); }
+}
+
+/** 装上 document / Node 两个全局，返回卸载函数。 */
+export function installDomStub() {
+  const prevDoc = globalThis.document;
+  const prevNode = globalThis.Node;
+  globalThis.document = {
+    createElement: (tag) => new StubElement(tag),
+    createElementNS: (_ns, tag) => new StubElement(tag),
+    createTextNode: (text) => new StubText(text),
+    getElementById: () => null,
+    querySelector: () => null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    activeElement: null,
+    body: { insertAdjacentHTML: () => {}, appendChild: () => {}, removeChild: () => {} },
+  };
+  globalThis.Node = StubNodeBase;
+  return () => {
+    globalThis.document = prevDoc;
+    globalThis.Node = prevNode;
+  };
+}
+
+/** 深度拼接一棵桩 DOM 的文本（含 text 属性与 textContent），用于断言渲染产出。 */
+export function stubText(node, out = []) {
+  if (!node) return out.join('');
+  if (node.nodeType === 3) out.push(node.textContent);
+  if (node.nodeType === 1) {
+    // class 走 classList.add 落到 attrs.class；text 走 textContent。两者都收，
+    // 免得断言漏掉其中一条路径。
+    if (node.textContent) out.push(node.textContent);
+  }
+  for (const child of node.children || []) stubText(child, out);
+  return out.join('');
+}
+
+/** 按 class 名收集子树中的节点（含自身）。 */
+export function stubFindAll(node, cls, out = []) {
+  if (!node || node.nodeType !== 1) return out;
+  if (String((node.attrs && node.attrs.class) || '').split(/\s+/).includes(cls)) out.push(node);
+  for (const child of node.children || []) stubFindAll(child, cls, out);
+  return out;
+}
