@@ -12,7 +12,8 @@
     "start:win": "start.bat",
     "stop:win": "stop.bat",
     "smoke": "node --experimental-sqlite scripts/smoke.mjs",
-    "test": "node --experimental-sqlite --test tests/",
+    "test": "node --experimental-sqlite --test \"tests/*.test.mjs\"",
+    "test:dir": "node --experimental-sqlite --test tests/*.test.mjs",
     "check": "node --check server/app.mjs && node --check server/bin/rvs.mjs"
   },
   "dependencies": {},
