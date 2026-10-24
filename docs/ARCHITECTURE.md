@@ -144,9 +144,13 @@ TunnelAgent extends https.Agent
 
 | 引擎 | `deeplink` | `upload` | 依赖图床 | 证据 | 状态说明 |
 |---|---|---|---|---|---|
-| Google Lens | `GET https://lens.google.com/uploadbyurl?url=<encoded>` | `POST https://lens.google.com/v3/upload`（multipart，字段名未验证） | 是 | E-07 / E-12 | `deeplink` **已验证可用**；`upload` 实验性默认关闭 |
-| Yandex | `GET https://yandex.com/images/search?rpt=imageview&url=<encoded>` | `POST https://yandex.com/images/search`（multipart `upfile`，含 cbir 变体） | 是 | E-08 / E-16 | `deeplink` **已验证可用**；`upload` 实验性默认关闭 |
-| Bing | `GET https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIVSP&sbisrc=UrlPaste&q=imgurl:<encoded>` | `POST https://www.bing.com/images/api/v3/searchbyimage` 等三个候选（见 `scripts/probe/out-A*`） | 是 | E-09 / E-10 / E-13~E-15 | `deeplink` **部分验证**（主机与路径已验证 200，参数形态未验证）；`upload` 实验性默认关闭 |
+| Google Lens | `GET https://lens.google.com/uploadbyurl?url=<encoded>` | `POST https://lens.google.com/v3/upload`（multipart，字段名未验证） | 是 | E-07 / E-12 | `deeplink` **实测不可用**（`uploadbyurl` 返回 200 但页面无 Lens 结果结构，实测 2026-10-24）；`upload` 未验证，默认关闭 |
+| Yandex | `GET https://yandex.com/images/search?rpt=imageview&url=<encoded>` | `POST https://yandex.com/images/search`（multipart `upfile`，含 cbir 变体） | 是 | E-08 / E-16 | `deeplink` **未验证**（返回 200 但结果为客户端渲染，服务端取不到结构）；`upload` 未验证，默认关闭 |
+| Bing | `GET https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIVSP&sbisrc=UrlPaste&q=imgurl:<encoded>` | `POST https://www.bing.com/images/api/v3/searchbyimage` 等三个候选（见 `scripts/probe/out-A*`） | 是 | E-09 / E-10 / E-13~E-15 | `deeplink` **已验证**（实测 2026-10-24）；`upload` 未验证，默认关闭 |
+
+> 上表「状态说明」以 **live `GET /api/engines` 的 `availability` 字段**为准（`verified` / `unverified` / `unavailable`），
+> 而非文档撰写时的预期。引擎可用性会随引擎侧改版变化，联调前先读一次 live 数据；
+> 前端「引擎诊断」页渲染的也是同一份 live 数据。
 
 ### 4.3 为什么本地帧不能直接用 deeplink
 
