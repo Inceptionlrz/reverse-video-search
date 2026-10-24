@@ -174,6 +174,24 @@ export function createTaskService({ tasksRepo, framesRepo, analysesRepo, resultH
     } catch {
       // 目录不存在或删除失败均忽略
     }
+    // EARS #20：删除任务时清理本应用生成的帧、结果、导出临时文件和日志索引。
+    // 上传的源视频副本（data/uploads/u_*/…）同样在此清理：抽帧完成后它不再被引用
+    // （无重新抽帧入口），用户的原始文件也不在本目录，留着即永久泄漏整段视频。
+    // ⚠️ 仅删 uploads 暂存区内的文件：JSON 建任务时 source_path 指向用户磁盘原文件，
+    // 删那个等于删用户的源视频，边界必须按路径前缀判定，不能凭 source_path 非空就删。
+    if (task.source_path) {
+      const uploadsRoot = path.join(cfg.dataDir, 'uploads') + path.sep;
+      if (path.resolve(task.source_path).startsWith(uploadsRoot)) {
+        try {
+          const stagingDir = path.dirname(task.source_path);
+          fs.rmSync(task.source_path, { force: true });
+          // 暂存目录非递归移除：仅当已空才成功，误遇共享目录时不伤他人文件
+          try { fs.rmdirSync(stagingDir); } catch { /* 非空或不存在即保留 */ }
+        } catch {
+          // 源文件删除失败不阻塞任务删除
+        }
+      }
+    }
     await resultHitsRepo.deleteByTask(id);
     await analysesRepo.deleteByTask(id);
     await framesRepo.deleteByTask(id);
