@@ -56,7 +56,7 @@ export async function startApp(cfg) {
 }
 
 // node:http 版 HTTP 客户端：返回 { status, json, text, buffer, headers }。
-export function httpCall(port, method, pathName, body) {
+export function httpCall(port, method, pathName, body, extraHeaders) {
   return new Promise((resolve, reject) => {
     const payload = body === undefined ? null : Buffer.from(JSON.stringify(body), 'utf8');
     const req = http.request(
@@ -65,9 +65,11 @@ export function httpCall(port, method, pathName, body) {
         port,
         method,
         path: pathName,
-        headers: payload
-          ? { 'content-type': 'application/json', 'content-length': payload.length, Connection: 'close' }
-          : { Connection: 'close' },
+        headers: {
+          ...(payload ? { 'content-type': 'application/json', 'content-length': payload.length } : {}),
+          Connection: 'close',
+          ...(extraHeaders || {}),
+        },
       },
       (res) => {
         const chunks = [];
@@ -93,10 +95,10 @@ export function httpCall(port, method, pathName, body) {
 
 export function makeClient(port) {
   return {
-    get: (p) => httpCall(port, 'GET', p),
-    post: (p, body) => httpCall(port, 'POST', p, body ?? {}),
-    patch: (p, body) => httpCall(port, 'PATCH', p, body ?? {}),
-    put: (p, body) => httpCall(port, 'PUT', p, body ?? {}),
+    get: (p, extraHeaders) => httpCall(port, 'GET', p, undefined, extraHeaders),
+    post: (p, body, extraHeaders) => httpCall(port, 'POST', p, body ?? {}, extraHeaders),
+    patch: (p, body, extraHeaders) => httpCall(port, 'PATCH', p, body ?? {}, extraHeaders),
+    put: (p, body, extraHeaders) => httpCall(port, 'PUT', p, body ?? {}, extraHeaders),
     del: (p) => httpCall(port, 'DELETE', p),
   };
 }

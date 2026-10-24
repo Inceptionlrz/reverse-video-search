@@ -81,11 +81,18 @@ export function createStaticHandler({ staticDir, framesDir, thumbsDir }) {
       return true;
     }
     if (!fs.existsSync(filePath)) {
-      // 前端为单页应用，未知路径回落到 index.html 由前端路由处理。
-      const index = path.join(staticDir, 'index.html');
-      if (fs.existsSync(index)) return serveFile(req, res, index);
-      sendText(res, 404, 'Not Found');
-      return true;
+      // 前端为单页应用，但兜底只面向"导航请求"：
+      //   浏览器地址栏/链接跳转（Accept 含 text/html）与根路径 → 回落 index.html 交前端路由；
+      //   资产/脚本/fetch 请求（css/js/svg/字体，Accept 不含 text/html）→ 404。
+      // 否则写错的资产路径会拿到 HTML，浏览器报 "Unexpected token '<'" 这类误导性错误，
+      // 前端 fetch 的错误分支也拿不到 JSON 信封。根路径无论何种 Accept 都是应用入口
+      // （curl 默认不带 text/html，也要能拿到首页）。
+      const isNavigation = pathname === '/' || String(req.headers?.accept || '').includes('text/html');
+      if (isNavigation) {
+        const index = path.join(staticDir, 'index.html');
+        if (fs.existsSync(index)) return serveFile(req, res, index);
+      }
+      return false; // 交回 app.mjs 输出 404 JSON 信封
     }
     return serveFile(req, res, filePath);
   };
