@@ -133,15 +133,24 @@ export async function readMultipart(req, options = {}) {
           if (!final) return;
           fail('multipart 数据不完整');
         }
-        const headerBlock = buf.subarray(4, headEnd).toString('utf8');
+        // 第 129 行已强制 buf[0..1] 为 \r\n（boundary 与分帧头之间的前导 CRLF），
+        // 故头部文本从字节 2 开始。此前误从 4 起切，首行头部被削掉前 2 字节
+        // （Content-Disposition → ntent-Disposition），name/filename 正则失配，
+        // 整个 multipart 上传报 400（P0：浏览器 FormData 是唯一上传路径）。
+        const headerBlock = buf.subarray(2, headEnd).toString('utf8');
         buf = buf.subarray(headEnd + 4);
         startPart(headerBlock);
         state = 'body';
         continue;
       }
       if (state === 'body') {
-        const searchFrom = Math.max(0, buf.length - delimiter.length - 4);
-        const idx = buf.indexOf(delimiter, searchFrom);
+        // 必须从头搜索：此前的 searchFrom = buf.length - D - 4 尾部优化隐含假设
+        // 「delimiter 若在 buf 中必始于末尾 D+4 字节内」——但只要同一 chunk 里
+        // delimiter 后还跟着后续 part（>4 字节，浏览器 FormData 的常态），真正的
+        // 边界即被跳过、改配更后面的 delimiter，中间 part 的头与值全被吞进
+        // 当前 part 本体（字段丢失 + 文件被污染）。buf 经下面 keep-back 后始终
+        // 只有 D+4 字节存量，从头 indexOf 的代价可忽略。
+        const idx = buf.indexOf(delimiter);
         if (idx < 0) {
           const keep = delimiter.length + 4;
           const emitEnd = Math.max(0, buf.length - keep);
