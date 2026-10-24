@@ -115,4 +115,26 @@ describe('图床桥接契约（consent.imagehost 曾被无视）', () => {
     assert.equal(conf.json?.ok, false, 'bridge=true 且未选站点必须被拒绝');
     assert.equal(conf.json?.error?.code, 'BAD_REQUEST', `错误码应为 BAD_REQUEST，实测 ${conf.json?.error?.code}`);
   });
+
+  test('B4：全部作业终态后任务必须收敛为 done——不得永远卡在 analyzing', async (t) => {
+    // 缺陷原貌：全仓库没有任何地方写 tasks.status='done'，全部组合落 manual 后
+    // 任务永远「分析中」，前端 renderActions 因此不再显示「发起检索」按钮。
+    const { cfg } = makeLiveButUnroutableConfig();
+    const app = await startApp(cfg);
+    t.after(async () => { await app.close().catch(() => {}); });
+
+    const api = makeClient(app.server.address().port);
+    const taskId = await seedTask(app, { confirmed: 1, status: 'frames_ready' });
+    await seedFrame(app, taskId, { seq: 1 });
+    await api.post(`/api/tasks/${taskId}/confirm`, { engines: true });
+    await api.post('/api/search/run-analyses', { task_id: taskId, consent_ack: true });
+
+    const items = await waitForAnalysesSettled(api, taskId);
+    assert.ok(items.length > 0, '前置：应产生分析作业');
+    assert.ok(items.every((a) => !['queued', 'running'].includes(a.status)), '前置：全部分析应已终态');
+
+    const detail = await api.get(`/api/tasks/${taskId}`);
+    const status = detail.json?.data?.task?.status;
+    assert.equal(status, 'done', `全部作业终态后任务应为 done，实测 ${status}（卡在 analyzing 会让前端丢失发起检索按钮）`);
+  });
 });

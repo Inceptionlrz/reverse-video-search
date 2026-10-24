@@ -95,6 +95,30 @@ export function createExecutor(deps) {
 
   // 主执行体：返回终态 {status}。任何异常都收敛为 manual（永不让 analysis 悬挂在 running）。
   async function execute(analysisId) {
+    const result = await executeOnce(analysisId);
+    // 终态收敛：最后一个作业落终态后，把任务从 analyzing 推到 done。
+    // 曾完全没有这一步——全部组合终态后任务永远卡在「分析中」，前端也因此
+    // 不再显示「发起检索」按钮（renderActions 只认 frames_ready/done/paused）。
+    try {
+      const row = await analysesRepo.get(analysisId);
+      if (row?.task_id) await settleTaskIfIdle(row.task_id);
+    } catch (err) {
+      logger.warn('analysis', 'settle_failed', `任务终态收敛失败：${err.message}`, { analysis_id: analysisId });
+    }
+    return result;
+  }
+
+  async function settleTaskIfIdle(taskId) {
+    const pending = await analysesRepo.countPendingByTask(taskId);
+    if (pending > 0) return;
+    const task = await tasksRepo.get(taskId);
+    if (task && !task.deleted_at && task.status === 'analyzing') {
+      await tasksRepo.update(taskId, { status: 'done', phase: 'done' });
+      logger.info('task', 'completed', '全部检索作业已终态，任务标记完成', { task_id: taskId });
+    }
+  }
+
+  async function executeOnce(analysisId) {
     const row = await analysesRepo.get(analysisId);
     if (!row || row.status !== 'queued') return { skipped: true };
     const frame = await framesRepo.get(row.frame_id);

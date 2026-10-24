@@ -91,6 +91,14 @@ export function createAnalysesRepo(db) {
       return Number(row?.n || 0);
     },
 
+    async countPendingByTask(taskId) {
+      const row = await db.get(
+        `SELECT COUNT(*) AS n FROM analyses WHERE task_id = ? AND status IN ('queued', 'running')`,
+        [taskId],
+      );
+      return Number(row?.n || 0);
+    },
+
     async deleteByTask(taskId) {
       const res = await db.run('DELETE FROM analyses WHERE task_id = ?', [taskId]);
       return res.changes;
