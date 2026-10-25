@@ -1,0 +1,30 @@
+[
+  {
+    "label": "H1-v3-upload-plain",
+    "step1Status": 303,
+    "step2Status": 200,
+    "/url?q=": 0,
+    "ext href": 0,
+    "data_ved": 0,
+    "vsrid": 0,
+    "lns_surface": 1,
+    "kb_focus": 0,
+    "script_AF": 0,
+    "title": "Google Search",
+    "samples": []
+  },
+  {
+    "label": "H2-v3-upload-hl",
+    "step1Status": 303,
+    "step2Status": 200,
+    "/url?q=": 0,
+    "ext href": 0,
+    "data_ved": 0,
+    "vsrid": 0,
+    "lns_surface": 1,
+    "kb_focus": 0,
+    "script_AF": 0,
+    "title": "Google Search",
+    "samples": []
+  }
+]

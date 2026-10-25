@@ -284,9 +284,10 @@ export async function waitForTaskStatus(api, taskId, status, timeoutMs = 60000) 
  * 用它的测试不要越界去断言视觉表现。
  */
 class StubNodeBase {
-  constructor() { this.children = []; this.attrs = {}; }
-  appendChild(child) { this.children.push(child); return child; }
-  removeChild(child) { this.children = this.children.filter((c) => c !== child); return child; }
+  constructor() { this.children = []; this.attrs = {}; this.parent = null; }
+  appendChild(child) { child.parent = this; this.children.push(child); return child; }
+  removeChild(child) { this.children = this.children.filter((c) => c !== child); child.parent = null; return child; }
+  remove() { if (this.parent) this.parent.removeChild(this); return this; }
   get firstChild() { return this.children[0] || null; }
 }
 
@@ -310,7 +311,47 @@ class StubElement extends StubNodeBase {
   setAttribute(key, value) { this.attrs[key] = String(value); }
   addEventListener() {}
   removeEventListener() {}
-  remove() {}
+  remove() { if (this.parent) this.parent.removeChild(this); return this; }
+  focus() {}
+
+  /** 极小选择器匹配：仅支持 tag、.class、#id、tag[attr] 与逗号组合，够 dom.js 用。 */
+  static matches(node, sel) {
+    const parts = String(sel).split(',').map((s) => s.trim()).filter(Boolean);
+    return parts.some((p) => {
+      if (p.startsWith('#')) return node.attrs && node.attrs.id === p.slice(1);
+      if (p.startsWith('.')) return String((node.attrs && node.attrs.class) || '').split(/\s+/).includes(p.slice(1));
+      const attr = p.match(/^([\w-]+)\[([\w-]+)\]$/);
+      if (attr) return node.tagName === attr[1] && node.attrs && node.attrs[attr[2]] !== undefined;
+      return node.tagName === p;
+    });
+  }
+
+  querySelector(sel) {
+    let found = null;
+    const walk = (n) => {
+      if (found) return;
+      for (const c of n.children) {
+        if (c.nodeType !== 1) continue;
+        if (StubElement.matches(c, sel)) { found = c; return; }
+        walk(c);
+      }
+    };
+    walk(this);
+    return found;
+  }
+
+  querySelectorAll(sel) {
+    const out = [];
+    const walk = (n) => {
+      for (const c of n.children) {
+        if (c.nodeType !== 1) continue;
+        if (StubElement.matches(c, sel)) out.push(c);
+        walk(c);
+      }
+    };
+    walk(this);
+    return out;
+  }
 }
 
 class StubText extends StubNodeBase {
@@ -321,21 +362,37 @@ class StubText extends StubNodeBase {
 export function installDomStub() {
   const prevDoc = globalThis.document;
   const prevNode = globalThis.Node;
+  const prevHtmlEl = globalThis.HTMLElement;
+  const prevLocation = globalThis.location;
+  // body 必须是真节点：modal()/toast() 都往它上面 appendChild，
+  // 用 no-op 对象会让渲染结果无处可查（断言会假绿）。
+  const body = new StubElement('body');
   globalThis.document = {
     createElement: (tag) => new StubElement(tag),
     createElementNS: (_ns, tag) => new StubElement(tag),
     createTextNode: (text) => new StubText(text),
     getElementById: () => null,
-    querySelector: () => null,
+    // 任何选择器都返回 body：modal()/toast()/popover() 的 root 容器因此就是 body，
+    // 断言可以直接 stubFindAll(document.body, ...) 往下找。这不是选择器引擎，
+    // 只是让"挂载点"有一个可查的落点。
+    querySelector: () => body,
+    querySelectorAll: () => [],
     addEventListener: () => {},
     removeEventListener: () => {},
     activeElement: null,
-    body: { insertAdjacentHTML: () => {}, appendChild: () => {}, removeChild: () => {} },
+    body,
   };
   globalThis.Node = StubNodeBase;
+  // dom.js 里有 `x instanceof HTMLElement` 判断，无此全局会直接 ReferenceError
+  globalThis.HTMLElement = StubElement;
+  // safeHttpUrl 用 location.origin 解析相对地址；缺了它会把所有外链判成 null，
+  // 于是"打开发引擎上传页"按钮静默消失——正是本测试要防的那类假绿。
+  globalThis.location = { origin: 'http://127.0.0.1:4173', href: 'http://127.0.0.1:4173/' };
   return () => {
     globalThis.document = prevDoc;
     globalThis.Node = prevNode;
+    globalThis.HTMLElement = prevHtmlEl;
+    globalThis.location = prevLocation;
   };
 }
 

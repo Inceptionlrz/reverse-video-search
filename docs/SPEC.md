@@ -344,9 +344,18 @@ stop.bat
 
 #### 告知层改进：可达性前置（用户反馈「Google Lens 需要跑腿」）
 
-上面第 5 项修完，自动化链路通了，但用户实跑后仍有一路要手动：**Google Lens 的桥接实测不可用**——
-`server/providers/google_lens.mjs` 头部注释记录了原因（`uploadbyurl` 返回 200，但页面里没有 Lens 结果结构），
-编排层因此直接走 manual。这是**如实的能力标注，不是故障**。
+上面第 5 项修完，自动化链路通了，但用户实跑后仍有一路要手动：**Google Lens 无法用纯 HTTP 自动化**——
+2026-10-25 复测（`scripts/probe/18-lens-cookie.mjs`，产物 `out-H-*.html`）确认：
+`POST /v3/upload`（字段名 `encoded_image`）返回 **303 并跳转到真实的结果页地址**，即上传被接受；
+但跟进该跳转（带与不带 cookie jar 各测一遍）拿到的是**纯 JS 应用外壳**——
+`<noscript>` 跳 `enablejs`，`AF_initDataCallback` / `/url?q=` / `data-ved` 均 0 命中，外壳内无任何数据端点。
+结果全部由客户端 JS 渲染，HTTP 层拿不到。`uploadbyurl` 撞的是同一堵墙。
+这是**能力边界，不是故障**；除非引入完整浏览器（Playwright 之类），而那与零运行时依赖的设计冲突。
+
+**更正一处误诊**：`server/providers/google-lens.mjs` 原注释把原因写成「`uploadbyurl` 返回 200 但页面无
+Lens 结果结构」，并据此判定 upload 路径不可用。真实原因是 JS 渲染墙，与走哪条上传路径无关——
+**上传端点本身是通的**（此前只看到 303 就停了，没跟进，也没判断原因）。已更正代码注释与
+ARCHITECTURE §9、OPEN-DECISIONS 的相关记录。
 
 问题在于：弹窗只列出引擎名字，用户要等 21 个作业跑完、翻降级日志才知道 Lens 全程手动，白等一整轮。
 已补上前置告知：

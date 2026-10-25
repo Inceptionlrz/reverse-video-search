@@ -12,7 +12,8 @@ import {
 } from './shared.view.js';
 import { frameGrid } from './frames-col.view.js';
 import { frameInspector, resultInspector, inspectorEmpty } from './inspector.view.js';
-import { doExtract, controlTask, runAnalysesFlow, openManualModal } from './task-actions.view.js';
+import { doExtract, controlTask, runAnalysesFlow } from './task-actions.view.js';
+import { openManualRunbook } from './manual-runbook.view.js';
 
 const SORTS = [
   { v: 'sort_score', t: '排序分' },
@@ -177,7 +178,7 @@ export default {
       if (!t.confirmed && state.frames.length) {
         nodes.push(banner({ tone: 'warn', title: '尚未确认外发范围', detail: '发生了什么：这个任务还没有授权任何帧离开本机。已切到什么：只能抽帧与查看本机信息。你能做什么：点「发起检索」，在弹窗里勾选引擎范围。' }));
       }
-      const agg = degradedBanner(state.analyses, { onOpenManual: () => openManualModal(state.analyses) });
+      const agg = degradedBanner(state.analyses, { onOpenManual: () => openManualRunbook({ analyses: state.analyses, frames: state.frames }) });
       if (agg) nodes.push(agg);
       slot.replaceChildren(...nodes);
     }

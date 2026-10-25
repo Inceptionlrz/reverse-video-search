@@ -1,10 +1,10 @@
 // 引擎可达性前置告知回归：确认弹窗必须在「发起之前」就说清哪些引擎只能手动跑腿。
 //
 // 缺陷原貌（用户实跑 21 个帧×引擎组合全部降级为 manual）：
-// 弹窗只列出引擎名字，没有任何可达性标注。Google Lens 的 bridge 实测不可用
-// （server/providers/google-lens.mjs 头部注释有记录：uploadbyurl 返回 200 但
-// 页面无 Lens 结果结构），意味着 Lens 这一路必然手动——但用户要等 21 个作业
-// 跑完、在降级日志里翻 skip 理由才知道，白等一整轮。
+// 弹窗只列出引擎名字，没有任何可达性标注。Google Lens 无法用纯 HTTP 自动化
+// （结果页为纯 JS 应用外壳，复测证据 scripts/probe/18-lens-cookie.mjs 与 out-H-*.html），
+// 意味着 Lens 这一路必然手动——但用户要等 21 个作业跑完、在降级日志里翻 skip 理由才知道，
+// 白等一整轮。
 //
 // 本文件把「UI 标注」与「后端 availability」钉在一起：
 //   - 纯函数侧：engineReachability 的判定顺序必须与执行层四级链路同序；

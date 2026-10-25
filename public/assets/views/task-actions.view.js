@@ -72,7 +72,9 @@ export async function runAnalysesFlow({ taskId, task, engines, enabledFrames, on
   });
 }
 
-/** 手动检索入口列表：manual 态的平等出口（信息态，不是错误态）。 */
+/** 手动检索入口列表：manual 态的平等出口（信息态，不是错误态）。
+ *  已由 manual-runbook.view.js 的 openManualRunbook 取代（按帧聚合 + 剪贴板/拖放），
+ *  此处保留导出仅为兼容旧引用，新代码请直接用 openManualRunbook。 */
 export function openManualModal(analyses) {
   const manual = analyses.filter((a) => a.status === 'manual');
   const ui = modal({

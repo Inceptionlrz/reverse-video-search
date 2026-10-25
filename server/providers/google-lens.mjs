@@ -1,14 +1,32 @@
 // Google Lens 适配器。
-// 实测结论（2026-10-24，证据 scripts/probe/lens.html 与 out-G2_GET_lens_uploadbyurl.txt）：
-//   GET https://lens.google.com/uploadbyurl?url=<encoded> 返回 HTTP 200，
-//   但 title 恒为 "Google Search"，页面无任何 Lens 结果结构（lens × 0 / uploadbyurl × 0）。
-// 即：200 状态码不代表功能可用。ARCHITECTURE §4.2 中"deeplink 已验证可用"的结论据此**已作废**。
-// 本适配器将 deeplink 标记为 unavailable：编排层会跳过 deeplink 与基于 deeplink 的 bridge，
-// **不消耗任何注定为空的网络请求**，直接走 manual 指引。upload（v3/upload）端点字段名未验证，默认关闭。
+// 实测结论（2026-10-25 复测，证据 scripts/probe/18-lens-cookie.mjs 与 out-H-*.html）：
+//
+//   1) POST https://lens.google.com/v3/upload（multipart，字段名 encoded_image）
+//      → HTTP 303 + Location 指向 https://www.google.com/search?...&udm=26&lns_surface=26...
+//      **上传被接受**。那个 303 地址就是 Lens 网页端上传成功后的结果页地址，
+//      字段名 encoded_image 是对的。
+//
+//   2) 跟进该 303（带 cookie jar 与不带各测一遍）→ 200，但页面是纯 JS 应用外壳：
+//      <noscript> 跳 /httpservice/retry/enablejs；AF_initDataCallback 0 命中、
+//      /url?q= 0 命中、data-ved 0 命中；外壳内没有任何数据端点
+//      （无 script src、无 batchexecute、无 rpcids）。结果全部由客户端 JS 渲染，
+//      HTTP 层拿不到。
+//
+//   3) uploadbyurl 同理：200 + 同一个 JS 外壳。它"没有结果"不是因为端点失效，
+//      而是撞同一堵 JS 渲染墙。
+//
+// 结论：Lens 无法用纯 HTTP 自动化，除非引入完整浏览器（Playwright 之类）——那与本项目
+// 零运行时依赖的设计冲突，且逆向其内部 RPC 极脆弱、易静默失效。故 deeplink / bridge
+// 均标 unavailable，编排层直接走 manual；手动成本由 manual-runbook.view.js 的
+// 剪贴板写入与 File 拖放压低。
+//
+// 更正记录：本文件此前把原因写成"uploadbyurl 返回 200 但页面无 Lens 结果结构"，
+// 并据此判定 upload 不可用。那是**误诊**——真实原因是结果页为 JS 渲染，
+// 与走 upload 还是 uploadbyurl 无关。上传端点本身是通的。
 import { BaseProvider, AVAILABILITY } from './base.mjs';
 
 const UNAVAILABLE_REASON =
-  'Google Lens 深链实测不可用：uploadbyurl 返回 200 但页面无 Lens 结果结构（实测 2026-10-24）';
+  'Google Lens 深链实测不可用：结果页由浏览器 JS 渲染，HTTP 层无数据可解析（复测 2026-10-25，证据 scripts/probe/18-lens-cookie.mjs）';
 
 export class GoogleLensProvider extends BaseProvider {
   constructor() {

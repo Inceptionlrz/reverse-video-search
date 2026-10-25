@@ -144,7 +144,7 @@ TunnelAgent extends https.Agent
 
 | 引擎 | `deeplink` | `upload` | 依赖图床 | 证据 | 状态说明 |
 |---|---|---|---|---|---|
-| Google Lens | `GET https://lens.google.com/uploadbyurl?url=<encoded>` | `POST https://lens.google.com/v3/upload`（multipart，字段名未验证） | 是 | E-07 / E-12 | `deeplink` **实测不可用**（`uploadbyurl` 返回 200 但页面无 Lens 结果结构，实测 2026-10-24）；`upload` 未验证，默认关闭 |
+| Google Lens | `GET https://lens.google.com/uploadbyurl?url=<encoded>` | `POST https://lens.google.com/v3/upload`（multipart，字段名 `encoded_image` **已验证为正确字段名**） | 是 | E-07 / E-12 / 2026-10-25 复测 | `deeplink` **实测不可用**；`upload` **端点实测被接受**（303 跳转到真实结果页地址）但**结果页为纯 JS 应用外壳**，HTTP 层无数据可解析，故 `bridge` 亦不可用；默认关闭 |
 | Yandex | `GET https://yandex.com/images/search?rpt=imageview&url=<encoded>` | `POST https://yandex.com/images/search`（multipart `upfile`，含 cbir 变体） | 是 | E-08 / E-16 | `deeplink` **未验证**（返回 200 但结果为客户端渲染，服务端取不到结构）；`upload` 未验证，默认关闭 |
 | Bing | `GET https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIVSP&sbisrc=UrlPaste&q=imgurl:<encoded>` | `POST https://www.bing.com/images/api/v3/searchbyimage` 等三个候选（见 `scripts/probe/out-A*`） | 是 | E-09 / E-10 / E-13~E-15 | `deeplink` **已验证**（实测 2026-10-24）；`upload` 未验证，默认关闭 |
 

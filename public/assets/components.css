@@ -43,6 +43,12 @@
 .consent-row { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
 /* 可达性子行：从属于上面的说明句，靠缩进 + 分隔线读出层级，不靠颜色深浅区分。 */
 .consent-row--sub { padding-left: var(--space-4); border-left: 2px solid var(--divider); margin-left: var(--space-1); }
+
+/* 手动跑腿工作台：一帧一组，缩略图可拖到引擎上传页 */
+.runbook__group { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3); background: var(--bg-secondary); border: 1px solid var(--divider); border-radius: var(--radius-lg); }
+.runbook__thumb { width: 96px; height: 96px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--divider); cursor: grab; flex: none; background: var(--bg-sunken); }
+.runbook__thumb:active { cursor: grabbing; }
+.runbook__thumb--empty { display: flex; align-items: center; justify-content: center; }
 .consent-ack { padding: var(--space-3); background: var(--consent-ack-bg); border: 1px solid var(--consent-border); border-radius: var(--radius-md); font-size: var(--text-sm); }
 .export-field { display: flex; gap: var(--space-3); flex-wrap: wrap; }
 .export-field__opt { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); }
