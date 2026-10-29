@@ -203,4 +203,17 @@
   .score-cell { width: 128px; }
   .compare { grid-template-columns: 1fr; }
   .statusbar__center { display: none; }
+  /* 上面三个容器默认是 nowrap，装多个按钮时在 ≤360px 屏上必然溢出（横滚）。
+     换行是唯一稳妥解：按钮组在窄屏纵向堆叠，不牺牲任何可点性。 */
+  .row, .consent-row { flex-wrap: wrap; }
+  .modal__foot { flex-wrap: wrap; justify-content: stretch; }
+  .modal__foot > .btn { flex: 1 1 auto; }
 }
+
+/* 长串兜底：URL / 文件路径 / 哈希这类无空格长 token 会顶宽容器，
+   在没有 break-all 的地方统一允许断行，避免出现横向滚动。 */
+body { overflow-wrap: break-word; }
+
+/* 表格若有朝一日被启用，必须有横向滚动容器，否则 nowrap 表头会顶宽整页。 */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap > .table { min-width: max-content; }

@@ -8,6 +8,8 @@ import {
   makeClient,
   makeOfflineConfig,
   makeTestVideo,
+  mediaBinariesReady,
+  requireMedia,
   startApp,
   waitForTaskStatus,
   zeroOutbound,
@@ -18,6 +20,7 @@ const DHASH_RE = /^[0-9a-f]{16}$/;
 describe('SPEC §14 验收项 11：完全离线下本地预检与抽帧可用', () => {
   test('验收项11：RVS_OFFLINE=1 下预检 + interval 抽帧 + dHash + 去重全流程可用（EARS #26）', async (t) => {
     const { cfg, tmp } = makeOfflineConfig();
+    if (!(await requireMedia(t, cfg))) return;
     const video = await makeTestVideo(tmp);
     const app = await startApp(cfg);
     const api = makeClient(app.server.address().port);
@@ -85,6 +88,7 @@ describe('SPEC §14 验收项 11：完全离线下本地预检与抽帧可用', 
 
   test('验收项11：scene 模式离线可用，且无场景变化时回退固定间隔而非返回空（EARS #26）', async (t) => {
     const { cfg, tmp } = makeOfflineConfig();
+    if (!(await requireMedia(t, cfg))) return;
     const video = await makeTestVideo(tmp, 'scene-fixture.mp4');
     const app = await startApp(cfg);
     const api = makeClient(app.server.address().port);
@@ -123,6 +127,7 @@ describe('SPEC §14 验收项 11：完全离线下本地预检与抽帧可用', 
 
   test('验收项11：文件损坏时预检给出可操作原因且不触网（EARS #26）', async (t) => {
     const { cfg, tmp } = makeOfflineConfig();
+    if (!(await requireMedia(t, cfg))) return;
     const broken = path.join(tmp, 'broken.mp4');
     fs.writeFileSync(broken, Buffer.from('this is not a video at all', 'utf8'));
     const app = await startApp(cfg);

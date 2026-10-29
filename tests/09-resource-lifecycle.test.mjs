@@ -17,6 +17,7 @@ import {
   makeClient,
   makeOfflineConfig,
   makeTestVideo,
+  requireMedia,
   seedFrame,
   seedTask,
   startApp,
@@ -57,6 +58,7 @@ describe('E2E 预备 A：资源生命周期（删除后 frames/DB 真正清零�
     const api = makeClient(app.server.address().port);
     const srcDir = path.join(tmp, 'src');
     fs.mkdirSync(srcDir, { recursive: true });
+    if (!(await requireMedia(t, cfg))) return;
     const video = await makeTestVideo(srcDir);
     t.after(async () => {
       await app.close().catch(() => {});
@@ -179,6 +181,7 @@ describe('E2E 预备 A：资源生命周期（删除后 frames/DB 真正清零�
     const api = makeClient(app.server.address().port);
     const srcDir = path.join(tmp, 'src');
     fs.mkdirSync(srcDir, { recursive: true });
+    if (!(await requireMedia(t, cfg))) return;
     const video = await makeTestVideo(srcDir);
     t.after(async () => {
       await app.close().catch(() => {});
@@ -227,6 +230,7 @@ describe('E2E 预备 A：资源生命周期（删除后 frames/DB 真正清零�
     const api = makeClient(app.server.address().port);
     const srcDir = path.join(tmp, 'src');
     fs.mkdirSync(srcDir, { recursive: true });
+    if (!(await requireMedia(t, cfg))) return;
     const video = await makeTestVideo(srcDir);
     t.after(async () => {
       await app.close().catch(() => {});

@@ -42,6 +42,11 @@ export function makeOfflineConfig(extra = {}) {
       RVS_LOG_LEVEL: 'error',
       RVS_PORT: '0',
       RVS_ENGINE_MIN_INTERVAL_MS: '50',
+      // 媒体二进制路径必须从真实环境继承：测试刻意用显式 env 隔离（loadConfig 不会
+      // 回落到 process.env），但 ffmpeg 不在 PATH 时唯一的补救手段就是 RVS_FFMPEG /
+      // RVS_FFPROBE。不继承的话这条补救路径形同虚设，README 里写的也就成了空话。
+      ...(process.env.RVS_FFMPEG ? { RVS_FFMPEG: process.env.RVS_FFMPEG } : {}),
+      ...(process.env.RVS_FFPROBE ? { RVS_FFPROBE: process.env.RVS_FFPROBE } : {}),
       ...extra,
     },
     REPO_ROOT,
@@ -107,6 +112,7 @@ export function makeClient(port) {
 // 段内静止 → 帧内去重分组；段间差异大 → 不同组；段边界 → scene 检测有素材。
 export async function makeTestVideo(dir, name = 'fixture.mp4') {
   const file = path.join(dir, name);
+  const bin = process.env.RVS_FFMPEG || 'ffmpeg';
   const args = [
     '-v', 'error',
     '-f', 'lavfi', '-i', 'smptehdbars=s=320x180:d=2:r=10',
@@ -118,8 +124,40 @@ export async function makeTestVideo(dir, name = 'fixture.mp4') {
     '-t', '6',
     file, '-y',
   ];
-  await spawnBinary('ffmpeg', args, { timeoutMs: 60000 });
+  await spawnBinary(bin, args, { timeoutMs: 60000 });
   return file;
+}
+
+/**
+ * ffmpeg / ffprobe 可用性探测。
+ *
+ * 缺件是环境问题，不是产品缺陷。若直接跑下去，失败信息是「ffmpeg 启动失败:
+ * spawn ffmpeg ENOENT」，看起来像代码坏了，实际只是机器上没装 —— 这会误导排障
+ * 方向。调用方应在建夹具之前先探测，缺失时 t.skip 并说明如何补救。
+ */
+export async function mediaBinariesReady(cfg) {
+  const names = [cfg.ffmpeg, cfg.ffprobe];
+  try {
+    for (const bin of names) {
+      await spawnBinary(bin, ['-version'], { timeoutMs: 8000 });
+    }
+    return { ok: true, reason: null };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: `${names.join(' / ')} 不可用：${err.message}。安装 ffmpeg 并加入 PATH，或设 RVS_FFMPEG / RVS_FFPROBE 指向二进制后重跑`,
+    };
+  }
+}
+
+/** 测试内用法：缺件时跳过并说明理由，返回 false 让调用方 return。 */
+export async function requireMedia(t, cfg) {
+  const media = await mediaBinariesReady(cfg);
+  if (!media.ok) {
+    t.skip(media.reason);
+    return false;
+  }
+  return true;
 }
 
 // 轮询等待条件成立，超时抛错（避免测试静默通过）。
