@@ -149,6 +149,7 @@ export const ERROR_COPY = {
   CAPTCHA: '需要人机验证',
   UPLOAD_REJECTED: '图床拒绝上传',
   PARSE_ERROR: '页面结构无法解析',
+  ENGINE_NO_HTTP_RESULT: '引擎结果需浏览器渲染，HTTP 层取不到',
   HTTP_ERROR: 'HTTP 返回异常',
   NOT_FOUND: '目标缺失',
   INTERNAL: '内部异常',

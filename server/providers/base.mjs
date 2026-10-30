@@ -86,6 +86,14 @@ export class BaseProvider {
     return null;
   }
 
+  // 子类实现：构造"给人在浏览器里打开"的链接，不参与自动解析。
+  // 用于那些 HTTP 层拿不到结果、但浏览器里能直接出结果的引擎（Google Lens 实测如此）：
+  // 有公网图片 URL 时，用户点开即是结果页，省掉手动上传文件这一步。
+  // 返回 null 表示没有这一形态，manual 回落到普通上传页。
+  buildManualDeeplink(imageUrl) {
+    return null;
+  }
+
   // 子类实现：把结果页 HTML 解析为归一化条目；空数组不代表失败。
   parse(html, baseUrl) {
     return [];

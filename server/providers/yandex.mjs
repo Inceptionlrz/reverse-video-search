@@ -79,6 +79,14 @@ export class YandexProvider extends BaseProvider {
     return `https://yandex.com/images/search?rpt=imageview&url=${encoded}&cbir_page=similar`;
   }
 
+  // 自动解析实测拿不到（服务端无结果结构），但同一条深链在浏览器里能出结果。
+  // 落到 manual 时给这个"已带图片"的链接，省掉手动上传文件这一步。
+  buildManualDeeplink(imageUrl) {
+    if (!imageUrl) return null;
+    const encoded = encodeURIComponent(imageUrl);
+    return `https://yandex.com/images/search?rpt=imageview&url=${encoded}&cbir_page=similar`;
+  }
+
   parse(html, baseUrl) {
     return parseYandexHtml(html, baseUrl);
   }

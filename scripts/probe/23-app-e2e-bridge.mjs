@@ -81,8 +81,12 @@ const confirmed = await api('POST', `/api/tasks/${taskId}/confirm`, {
 console.log(`授权: ${confirmed.status} consent=${JSON.stringify(confirmed.json?.data?.consent)}`);
 if (confirmed.status !== 200) { console.log(confirmed.text.slice(0, 300)); process.exit(1); }
 
-// 4) 只跑 Bing（省时，且 Bing 是唯一实测可用的引擎）
-const run = await api('POST', '/api/search/run-analyses', { task_id: taskId, consent_ack: true, providers: ['bing'] });
+// 4) 下发检索。默认全引擎——同一帧会被多个引擎各上传一次，
+//    正好用来压图床的同名覆盖（GitHub 缺 sha 会 422/409）。
+const only = process.env.RVS_E2E_PROVIDERS;
+const payload = { task_id: taskId, consent_ack: true };
+if (only) payload.providers = only.split(',');
+const run = await api('POST', '/api/search/run-analyses', payload);
 console.log(`下发: ${run.status} 作业数=${run.json?.data?.analyses?.length ?? 0}`);
 
 // 5) 等终态
@@ -103,9 +107,11 @@ for (const a of items) {
   const log = Array.isArray(a.degradation_log) ? a.degradation_log : [];
   const last = log[log.length - 1];
   console.log(`${a.provider}: ${a.status} 方式=${a.attempt_mode ?? '-'} 来源=${a.hit_source ?? '-'} http=${a.http_status ?? '-'} ${a.latency_ms ?? '-'}ms`);
-  if (a.error_code) console.log(`   末级: ${a.error_code} — ${a.error_message ?? '-'}`);
+  if (a.error_code) console.log(`   末级: ${a.error_code} — ${(a.error_message ?? '-').slice(0, 160)}`);
   if (last) console.log(`   日志末条: ${last.step} ok=${last.ok} ${last.code ?? ''} ${(last.message ?? '').slice(0, 120)}`);
   if (a.request_url) console.log(`   request_url: ${a.request_url}`);
+  // 手动态下 manual_url 可能是"已带图片"的深链（省掉手动上传文件）
+  if (a.manual_url) console.log(`   manual_url: ${a.manual_url.slice(0, 130)}`);
 }
 
 console.log('');

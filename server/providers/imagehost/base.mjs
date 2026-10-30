@@ -3,7 +3,6 @@
 // 注意：图床返回的 URL 会写入 analyses.request_url，结果必须标注"该帧曾由第三方图床中转"。
 import { buildMultipart } from '../../lib/http/multipart.mjs';
 import { trackedRequest } from '../base.mjs';
-import { request } from '../../lib/http/request.mjs';
 
 /**
  * 判断"图床返回的链接"能不能真被引擎取到图。
@@ -31,10 +30,11 @@ export function classifyImageUrl(probe) {
  * 抽出来是为了让不走 multipart 的图床（如 GitHub Contents API）也能复用同一套判据。
  */
 export async function verifyImageUrl(ctx, url) {
-  const probe = await request(url, {
+  // 走 trackedRequest，不直接调 request()：
+  // 直取 request 时这次请求既不计入出站统计（"取回校验"是真实外发），
+  // 也无法被测试注入，导致图床的整条上传流程测不动。
+  const probe = await trackedRequest(ctx, url, {
     method: 'GET',
-    config: ctx?.cfg,
-    proxy: ctx?.cfg?.proxy,
     maxBodyBytes: 1024,
     ttfbTimeoutMs: ctx?.cfg?.net?.ttfbTimeoutMs,
     totalTimeoutMs: ctx?.cfg?.net?.totalTimeoutMs,

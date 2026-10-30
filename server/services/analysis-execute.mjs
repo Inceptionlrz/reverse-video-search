@@ -38,13 +38,14 @@ export function createExecutor(deps) {
     await analysesRepo.update(analysisId, { finished_ms: Date.now(), ...patch });
   }
 
-  async function markManual(analysisId, { code, message, log, provider, frame }) {
+  async function markManual(analysisId, { code, message, log, provider, frame, manualUrl }) {
     await finish(analysisId, {
       status: 'manual',
       error_code: code || 'PARSE_ERROR',
       error_message: message,
       manual_path: frame?.file_path ?? null,
-      manual_url: provider?.entryUrl ?? null,
+      // manualUrl 可能是"已带图片"的深链（省掉手动上传），缺省才回落到上传页。
+      manual_url: manualUrl ?? provider?.entryUrl ?? null,
       degradation_log: JSON.stringify(log),
     });
     logger.info('analysis', 'manual', `已降级为手工模式：${message}`, { analysis_id: analysisId, provider: provider?.id });
@@ -225,14 +226,42 @@ export function createExecutor(deps) {
         log.push({ step: 'bridge', skipped: true, reason });
       }
 
+      // [3.5] 手动深链：引擎自动解析拿不到结果，但浏览器里能直接出结果的
+      // （Google Lens 实测如此）。有公网 URL 时给用户在浏览器点开的链接，
+      // 省掉"自己把帧文件拖进上传页"这一步——这是这类引擎目前唯一能省的动作。
+      // 仍然走同一份桥接授权：把帧传到图床是实打实的外发，不能因为"只是手动"就绕过。
+      let manualUrl = provider.entryUrl ?? null;
+      const manualDeeplinkSupported = typeof provider.buildManualDeeplink === 'function'
+        && Boolean(provider.buildManualDeeplink('https://example.invalid/x.jpg'));
+      if (manualDeeplinkSupported && hostId && consent?.bridge) {
+        const up = await runBridge(ctx, hostId, frame, analysisId, log);
+        log.push({ step: 'manual_deeplink', ok: up.ok, code: up.errorCode ?? null, message: up.errorMessage ?? null, imagehost: hostId });
+        if (up.ok) {
+          const dl = provider.buildManualDeeplink(up.url);
+          if (dl) manualUrl = dl;
+        }
+      } else if (manualDeeplinkSupported) {
+        log.push({
+          step: 'manual_deeplink',
+          skipped: true,
+          reason: hostId
+            ? '本任务未确认图床桥接，无法生成"已带图片"的链接，只能手动上传文件'
+            : '未选择图床站点，无法生成"已带图片"的链接，只能手动上传文件',
+        });
+      }
+
       // [4] manual：最后一级的错误码上抛，永不为空
-      await health.recordFailure(provider.id, lastError?.errorCode || 'PARSE_ERROR');
+      const finalCode = lastError?.errorCode || 'ENGINE_NO_HTTP_RESULT';
+      await health.recordFailure(provider.id, finalCode);
       await markManual(analysisId, {
-        code: lastError?.errorCode || 'PARSE_ERROR',
-        message: lastError?.errorMessage || '所有自动方式均不可用',
+        code: finalCode,
+        // 默认文案曾写「所有自动方式均不可用」，对 Google 是误导：
+        // 它不是"暂时不可用"，而是实测 HTTP 层取不到结果。用 provider 自己的结论。
+        message: lastError?.errorMessage || provider.notes || '所有自动方式均不可用',
         log,
         provider,
         frame,
+        manualUrl,
       });
       return { status: 'manual' };
     } catch (err) {

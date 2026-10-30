@@ -6,6 +6,10 @@ export const ERROR_CODES = {
   NETWORK_ERROR: 502,
   TIMEOUT: 504,
   PARSE_ERROR: 422,
+  // 与 PARSE_ERROR 同状态但语义不同：不是"解析失败"，
+  // 而是"该引擎的结果只能在浏览器里渲染，HTTP 层根本取不到数据"（Google Lens 实测如此）。
+  // 混用 PARSE_ERROR 会把用户引向"改解析规则"的错误排障方向。
+  ENGINE_NO_HTTP_RESULT: 422,
   UPLOAD_REJECTED: 413,
   PROXY_UNREACHABLE: 502,
   PROVIDER_DISABLED: 503,

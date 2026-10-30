@@ -23,22 +23,43 @@
 | 引擎 | 深链 | 直传 | 图床桥接 | 当前实际 |
 |---|---|---|---|---|
 | Bing 图片 | 已验证（端到端复跑见下） | 未验证（端点实测 400/404） | 已验证 | **配好 GitHub 图床即可自动** |
-| Yandex 图片 | 未验证 | 未验证 | 未验证 | 会尝试，结果不保证 |
-| Google Lens | 实测不可用 | 端点接受上传 | 不可用 | **只能手动** |
+| Yandex 图片 | 实测取不到结果 | 未验证 | 实测取不到结果 | 会尝试；落到手动时给「已带图片」链接 |
+| Google Lens | 实测取不到结果 | 端点接受上传 | 实测取不到结果 | 只能手动；落到手动时给「已带图片」链接 |
 
 **关键前提**：Bing / Yandex 的自动链路都要一个**公网可直取的图片 URL**，
 而这个 URL 只能来自图床。所以「能不能自动」实际取决于「有没有可用图床」，
 不是勾选一个开关就能自动——见下节实测结论。
 
-**为什么 Google Lens 不能自动**：它的结果页是纯 JS 应用外壳。
-实测 `POST /v3/upload`（字段名 `encoded_image`）返回 **303 并跳转到真实结果页地址**——上传是被接受的；
-但跟进该跳转拿到的是 `<noscript>` 跳 `enablejs` 的空壳，`AF_initDataCallback` / `/url?q=` / `data-ved` 全部 0 命中，
-外壳内没有任何数据端点。结果全靠客户端 JS 渲染，HTTP 层拿不到。带与不带 cookie 复测结论一致
-（证据：`scripts/probe/18-lens-cookie.mjs` 与 `out-H-*.html`）。
-不逆向其内部 RPC（极脆弱），也不引入完整浏览器（与零依赖设计冲突）。
+### 为什么 Google 无法自动（2026-10-30 五个端点复测）
 
-Lens 这一路的手动成本已尽量压低：任务详情页 → **手动跑腿工作台**，按帧聚合，
-点「复制帧图片」把帧写进剪贴板，到 Lens 上传页按 `Ctrl+V`；或直接把缩略图拖到上传区。
+证据 `scripts/probe/24-lens-recheck.mjs` 与 `out-24-*.html`：
+
+| 端点 | 结果 |
+|---|---|
+| `searchbyimage?image_url=`（带/不带 hl） | 303 → 200，约 94KB 的 **JS 应用外壳**：`<noscript>` 跳 `enablejs`，`/url?q=` / `data-ved` / `AF_initDataCallback` 全部 0 命中 |
+| `lens.google.com/uploadbyurl?url=`（带/不带 hl） | 同上，同一个空壳 |
+| `www.google.com/search?tbs=sbi:<enc>` | 200，但返回的是 **Google 首页**（title 为 `Google`，可见正文只有搜索框与页脚）。217KB 里 `data-ved` 36 个，却**没有任何视觉匹配区块**，唯一外链是页脚 `about.google`——`tbs=sbi` 已被 Google 忽略 |
+
+另外用 Playwright 真开浏览器访问 Lens：图片 URL **确实被接受**（落地 URL 带
+`vsdim=576,1024`、`lns_surface=26`），但随即被跳到 `/sorry/index`
+（"Our systems have detected unusual traffic"）——**当前代理出口 IP 被 Google 风控**。
+
+结论：Google 这条线在当前环境下无法纯 HTTP 自动化。不逆向其内部 RPC（极脆弱），
+也不引入常驻浏览器（与零依赖设计冲突）。因此它的失败码是 `ENGINE_NO_HTTP_RESULT`，
+**不是** `PARSE_ERROR`——后者会让人去改解析规则，而真实原因是 HTTP 层根本没有数据。
+
+### 手动深链：把「手动上传文件」降成「点一下」
+
+Google / Yandex 在浏览器里是能出结果的（JS 会执行），只是 HTTP 层取不到。
+所以只要帧有个公网直链，就能构造一个**已带图片**的链接：
+
+- Google：`https://lens.google.com/uploadbyurl?url=<图床直链>`
+- Yandex：`https://yandex.com/images/search?rpt=imageview&url=<图床直链>`
+
+落到手动时 `manual_url` 就是这个链接，用户点开即是结果页，**不必再把帧文件拖进上传页**。
+这仍然走同一份桥接授权——把帧传到图床是实打实的外发，不会因为"只是手动"就绕过。
+
+⚠️ Google 侧仍可能被 `/sorry` 风控拦（取决于你的出口 IP），Yandex 不受此影响。
 
 ## 图床实测结论（2026-10-30）
 
@@ -78,7 +99,7 @@ export RVS_GITHUB_BRANCH=frames        # 默认；建议用孤立分支，与主
 **代价必须说清**：帧会**公开可见**并**留在 git 历史里**（删掉分支历史才消失）。
 所以默认用孤立分支 `frames`，既不污染主分支历史，也不触发 Pages 重建。
 
-### 顺带修掉的三个「假成功 / 误导」
+### 顺带修掉的四个「假成功 / 误导」
 
 - **深链死代码**（最严重）：Bing 深链返回 302，而 `request()` 不自动跟随 3xx、
   且 3xx 不是 `res.ok`。旧代码把 `if (!res.ok) return` 写在跟随分支之前，
@@ -89,11 +110,19 @@ export RVS_GITHUB_BRANCH=frames        # 默认；建议用孤立分支，与主
   （`classifyImageUrl`）。否则 tmpfiles 那种 HTML 预览页会被当成成功，
   引擎拿网页去搜图 → 36 个组合跑完全是空结果，而失败原因还写成"解析失败"。
 - 412 不再归为 `PARSE_ERROR`：界面会写成「图床拒绝上传」而不是「页面结构无法解析」。
+- **同名覆盖缺 sha**（实测 12 帧任务里 7 帧因此失败）：同一帧会被多个引擎各上传一次、
+  路径完全相同，而 GitHub 覆盖已存在的文件**必须带 `sha`**，第二次起返回
+  422 `"sha" wasn't supplied.`（并发下是 409）。界面只显示「HTTP 422」，无从排障。
+  现冲突时先 `GET ?ref=<分支>` 取 sha 再覆盖（内容相同，幂等）；
+  `GET` 必须带 `?ref=`，否则读到默认分支、帧在孤立分支上根本取不到。
+  同时把 GitHub 响应体里的 `message` 带进失败原因——只报状态码等于没报。
 
-另修一处**配置静默失效**：超时配置存在 `cfg.net.*`，而 `request()` 读的是顶层
-`cfg.connectTimeoutMs`——把预算从 1s 放宽到 3s 后实际仍按 1s 走，
-表现为「代理只是慢，却被判代理不可达」。现由 `resolveTimeouts()` 统一解析，
-两种形态都认，并有测试钉死（`tests/20-redirect-follow.test.mjs`）。
+另修两处**配置/可观测静默失效**：
+- 超时配置存在 `cfg.net.*`，而 `request()` 读的是顶层 `cfg.connectTimeoutMs`——
+  把预算从 1s 放宽到 3s 后实际仍按 1s 走，表现为「代理只是慢，却被判代理不可达」。
+  现由 `resolveTimeouts()` 统一解析，两种形态都认（`tests/20`）。
+- `verifyImageUrl` 曾直连 `request()`，绕过 `trackedRequest`：这次请求既不计入出站统计
+  （"取回校验"是真实外发），也无法被测试注入。现改走 `trackedRequest`。
 
 ## 环境要求
 
