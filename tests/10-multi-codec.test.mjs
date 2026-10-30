@@ -7,14 +7,18 @@
 // 夹具分辨率取 640x360（≠ cfg.extract.targetWidth=320），这样"缩放生效"是真缩放而非恒等变换：
 // 帧宽高必须落到 320x180。时间戳等距性由 plannedIntervalMs 决定，与编码器无关，作为跨编码器一致性锁。
 //
-// 本地 ffmpeg 已实测具备 libvpx-vp9 与 libx265（ffmpeg -encoders），故无需跳过；
-// 若换环境缺失，对应用例 t.skip 并明确写「跳过：编码器不可用」，不假装通过。
+  // 本地 ffmpeg 已实测具备 libvpx-vp9 与 libx265（ffmpeg -encoders），故无需跳过；
+  // 若换环境缺失，对应用例 t.skip 并明确写「跳过：编码器不可用」，不假装通过。
+  // 二进制一律走 ffmpegBin()：硬编码 'ffmpeg' 会让 RVS_FFMPEG 失效，
+  // 表现为 caps 全 false、用例静默 skip（看着绿其实没跑）。
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, test } from 'node:test';
 import {
+  ffmpegBin,
+  ffprobeBin,
   makeClient,
   makeOfflineConfig,
   startApp,
@@ -64,7 +68,7 @@ const CODEC_SPECS = [
 async function detectEncoders() {
   let res;
   try {
-    res = await spawnBinary('ffmpeg', ['-hide_banner', '-encoders'], { timeoutMs: 30000 });
+    res = await spawnBinary(ffmpegBin(), ['-hide_banner', '-encoders'], { timeoutMs: 30000 });
   } catch {
     return { ffmpeg: false, vp9: false, hevc: false };
   }
@@ -81,7 +85,7 @@ async function makeCodecVideo(dir, spec) {
   const args = ['-v', 'error'];
   for (const seg of SEGMENTS) args.push('-f', 'lavfi', '-i', seg);
   args.push('-filter_complex', CONCAT_FILTER, '-map', '[v]', ...spec.encoderArgs, '-t', '6', file, '-y');
-  await spawnBinary('ffmpeg', args, { timeoutMs: 120000 });
+  await spawnBinary(ffmpegBin(), args, { timeoutMs: 120000 });
   return file;
 }
 
@@ -100,7 +104,7 @@ describe('E2E 预备 B：多编码器兼容（VP9 / HEVC 走完整抽帧路径�
       const file = await makeCodecVideo(shared.tmp, spec);
       // 夹具自检：ffprobe 必须报出目标编码器。防止"编码器名写错导致静默回退 h264"造成假阳性。
       const meta = await probeMedia(
-        { ffprobe: 'ffprobe', media: { probeTimeoutMs: 20000 } },
+        { ffprobe: ffprobeBin(), media: { probeTimeoutMs: 20000 } },
         file,
       );
       shared.fixtures[spec.key] = { file, codec: meta.codec, duration_ms: meta.duration_ms };

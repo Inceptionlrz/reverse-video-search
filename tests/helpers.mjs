@@ -108,11 +108,28 @@ export function makeClient(port) {
   };
 }
 
+/**
+ * 测试内直接 spawn ffmpeg 时用的二进制名。
+ *
+ * 凡是绕开 server（自己拼参数造夹具、跑 -encoders 探测）的测试都必须走这里，
+ * 不能硬编码 'ffmpeg'：helpers 的 makeOfflineConfig 用显式 env 调 loadConfig、
+ * 不回落 process.env，所以 RVS_FFMPEG 只对「读了 env 的地方」生效。硬编码会让
+ * 夹具探测恒失败 → caps.ffmpeg=false → 一堆用例静默 skip，看起来绿实则没跑。
+ */
+export function ffmpegBin() {
+  return process.env.RVS_FFMPEG || 'ffmpeg';
+}
+
+/** 同 ffmpegBin()，给直接 spawn ffprobe 的测试用。 */
+export function ffprobeBin() {
+  return process.env.RVS_FFPROBE || 'ffprobe';
+}
+
 // 三段结构差异明显的测试源（smptehdbars / rgbtestsrc / testsrc 各 2 秒）：
 // 段内静止 → 帧内去重分组；段间差异大 → 不同组；段边界 → scene 检测有素材。
 export async function makeTestVideo(dir, name = 'fixture.mp4') {
   const file = path.join(dir, name);
-  const bin = process.env.RVS_FFMPEG || 'ffmpeg';
+  const bin = ffmpegBin();
   const args = [
     '-v', 'error',
     '-f', 'lavfi', '-i', 'smptehdbars=s=320x180:d=2:r=10',

@@ -18,7 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { describe, test } from 'node:test';
-import { makeClient, makeOfflineConfig, startApp } from './helpers.mjs';
+import { ffmpegBin, makeClient, makeOfflineConfig, requireMedia, startApp } from './helpers.mjs';
 import { readMultipart } from '../server/lib/http/multipart-read.mjs';
 import { spawnBinary } from '../server/lib/media/probe.mjs';
 
@@ -84,7 +84,9 @@ function postRaw(port, pathName, buffer, contentType) {
 
 async function makeTinyVideo(dir, name = 'tiny.mp4') {
   const file = path.join(dir, name);
-  await spawnBinary('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'testsrc=s=128x96:d=1:r=5', '-pix_fmt', 'yuv420p', file, '-y'], { timeoutMs: 60000 });
+  // 必须走 ffmpegBin()：硬编码 'ffmpeg' 会让 RVS_FFMPEG 失效，表现为
+  // 本文件 E1–E4 在装了 ffmpeg 的机器上仍报 ENOENT。
+  await spawnBinary(ffmpegBin(), ['-v', 'error', '-f', 'lavfi', '-i', 'testsrc=s=128x96:d=1:r=5', '-pix_fmt', 'yuv420p', file, '-y'], { timeoutMs: 60000 });
   return file;
 }
 
@@ -150,6 +152,9 @@ describe('multipart 上传端到端与删除清理（commit 0f6494f / adb98f9）
     const { cfg, tmp } = makeOfflineConfig();
     const app = await startApp(cfg);
     t.after(async () => { await app.close().catch(() => {}); });
+    // E1–E4 都要先造视频夹具：缺 ffmpeg 是环境问题，跳过并说明补救方式，
+    // 不能让 ENOENT 伪装成 multipart 回归失败。
+    if (!(await requireMedia(t, cfg))) return;
 
     const dir = fs.mkdtempSync(path.join(tmp, 'src-'));
     const source = await makeTinyVideo(dir);
@@ -182,6 +187,9 @@ describe('multipart 上传端到端与删除清理（commit 0f6494f / adb98f9）
     const { cfg, tmp } = makeOfflineConfig();
     const app = await startApp(cfg);
     t.after(async () => { await app.close().catch(() => {}); });
+    // E1–E4 都要先造视频夹具：缺 ffmpeg 是环境问题，跳过并说明补救方式，
+    // 不能让 ENOENT 伪装成 multipart 回归失败。
+    if (!(await requireMedia(t, cfg))) return;
 
     const dir = fs.mkdtempSync(path.join(tmp, 'src-'));
     const source = await makeTinyVideo(dir);
@@ -212,6 +220,9 @@ describe('multipart 上传端到端与删除清理（commit 0f6494f / adb98f9）
     const { cfg, tmp } = makeOfflineConfig();
     const app = await startApp(cfg);
     t.after(async () => { await app.close().catch(() => {}); });
+    // E1–E4 都要先造视频夹具：缺 ffmpeg 是环境问题，跳过并说明补救方式，
+    // 不能让 ENOENT 伪装成 multipart 回归失败。
+    if (!(await requireMedia(t, cfg))) return;
 
     // 关键边界：JSON 建任务时 source_path 指向用户磁盘上的原始文件，
     // 删除任务只能清 uploads 暂存区内的副本，绝不能删用户的源视频。
@@ -231,6 +242,9 @@ describe('multipart 上传端到端与删除清理（commit 0f6494f / adb98f9）
     const { cfg, tmp } = makeOfflineConfig();
     const app = await startApp(cfg);
     t.after(async () => { await app.close().catch(() => {}); });
+    // E1–E4 都要先造视频夹具：缺 ffmpeg 是环境问题，跳过并说明补救方式，
+    // 不能让 ENOENT 伪装成 multipart 回归失败。
+    if (!(await requireMedia(t, cfg))) return;
 
     const dir = fs.mkdtempSync(path.join(tmp, 'src-'));
     const source = await makeTinyVideo(dir);
