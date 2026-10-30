@@ -25,13 +25,20 @@ async function proxyStatus(ctx) {
     proxyCache = { at: now, value: { configured: false, reachable: null, note: '未配置代理，出站为直连' } };
     return proxyCache.value;
   }
-  const res = await request('https://www.bing.com/', { config: ctx.cfg, proxy: ctx.cfg.proxy, method: 'GET', totalTimeoutMs: 4000, ttfbTimeoutMs: 3000 });
+  // 判据是"隧道建没建起来"，不是"对方给没给 200"。
+  // 探针打 www.bing.com/，而 Bing 对无地域参数的请求一律 302 —— 直连也一样，
+  // 所以按 2xx 判定会把好端端的代理报成"不可达"（状态栏与排障全被带偏）。
+  // 拿到任何 HTTP 状态码都证明 CONNECT 隧道通了；只有 status 为 0（连接层失败）才算不可达。
+  const res = await request('https://www.bing.com/', { config: ctx.cfg, proxy: ctx.cfg.proxy, method: 'GET', totalTimeoutMs: 8000, ttfbTimeoutMs: 6000 });
+  const tunnelUp = res.ok || (res.status !== null && res.status > 0);
   proxyCache = {
     at: now,
     value: {
       configured: true,
-      reachable: res.ok,
-      note: res.ok ? '代理隧道可达' : `代理不可达：${res.errorMessage}`,
+      reachable: tunnelUp,
+      note: tunnelUp
+        ? (res.ok ? '代理隧道可达' : `代理隧道可达（探测地址返回 HTTP ${res.status}，非故障）`)
+        : `代理不可达：${res.errorMessage}`,
       latency_ms: res.latencyMs ?? null,
     },
   };

@@ -66,12 +66,16 @@ export function loadConfig(env = process.env, root = REPO_ROOT) {
     ffprobe: env.RVS_FFPROBE || 'ffprobe',
     logLevel: (env.RVS_LOG_LEVEL || 'info').toLowerCase(),
     nodeVersion: process.version,
-    // SPEC 11 超时预算：1s 隧道 / 3s TLS / 5s 首字节 / 15s 整体
+    // 超时预算。原值 1s 隧道 / 3s TLS / 5s 首字节 / 15s 整体对本地直连够用，
+    // 但走境外代理时实测光建连就要约 2.9s（catbox.moe，2026-10-30），3s 的 TLS
+    // 预算直接被判超时 → PROXY_UNREACHABLE，把"代理慢"说成"代理不通"。
+    // 放宽到 3s / 8s / 10s / 30s：仍是有界失败，只是不再误杀慢隧道。
+    // 全部可用 env 覆盖（RVS_NET_*_TIMEOUT_MS），慢环境还能继续调。
     net: {
-      connectTimeoutMs: readInt(env, 'RVS_NET_CONNECT_TIMEOUT_MS', 1000),
-      tlsTimeoutMs: readInt(env, 'RVS_NET_TLS_TIMEOUT_MS', 3000),
-      ttfbTimeoutMs: readInt(env, 'RVS_NET_TTFB_TIMEOUT_MS', 5000),
-      totalTimeoutMs: readInt(env, 'RVS_NET_TOTAL_TIMEOUT_MS', 15000),
+      connectTimeoutMs: readInt(env, 'RVS_NET_CONNECT_TIMEOUT_MS', 3000),
+      tlsTimeoutMs: readInt(env, 'RVS_NET_TLS_TIMEOUT_MS', 8000),
+      ttfbTimeoutMs: readInt(env, 'RVS_NET_TTFB_TIMEOUT_MS', 10000),
+      totalTimeoutMs: readInt(env, 'RVS_NET_TOTAL_TIMEOUT_MS', 30000),
     },
     media: {
       probeTimeoutMs: readInt(env, 'RVS_MEDIA_PROBE_TIMEOUT_MS', 20000),

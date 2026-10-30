@@ -1,0 +1,43 @@
+{
+  "at": "2026-10-30T15:01:52.085Z",
+  "proxy": "http://127.0.0.1:7897",
+  "image": "test-realframe.jpg",
+  "results": [
+    {
+      "id": "catbox",
+      "endpoint": "https://catbox.moe/user/api.php",
+      "ok": false,
+      "usable": false,
+      "status": 412,
+      "errorCode": "UPLOAD_REJECTED",
+      "errorMessage": "引擎返回 HTTP 412",
+      "latencyMs": 5399,
+      "returnedUrl": null,
+      "bodySnippet": "Invalid uploader"
+    },
+    {
+      "id": "0x0",
+      "endpoint": "https://0x0.st/",
+      "ok": false,
+      "usable": false,
+      "status": null,
+      "errorCode": "NETWORK_ERROR",
+      "errorMessage": "Client network socket disconnected before secure TLS connection was established",
+      "latencyMs": 5019,
+      "returnedUrl": null,
+      "bodySnippet": ""
+    },
+    {
+      "id": "tmpfiles",
+      "endpoint": "https://tmpfiles.org/api/v1/upload",
+      "ok": true,
+      "usable": true,
+      "status": 200,
+      "errorCode": null,
+      "errorMessage": null,
+      "latencyMs": 1712,
+      "returnedUrl": "https://tmpfiles.org/wFAMTqeXWuUZ/frame.jpg",
+      "bodySnippet": "{\"status\":\"success\",\"data\":{\"url\":\"https://tmpfiles.org/wFAMTqeXWuUZ/frame.jpg\"}}"
+    }
+  ]
+}

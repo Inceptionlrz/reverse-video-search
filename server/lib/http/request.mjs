@@ -35,10 +35,16 @@ function classifyNetworkError(err) {
   return 'NETWORK_ERROR';
 }
 
-function statusToCode(status, body) {
+// 导出供测试：分类是纯函数，但只有它能证明"412 不再被说成解析失败"。
+// 不导出就只能靠端到端打真实服务，回归成本高到事实上不会有人跑。
+export function statusToCode(status, body) {
   if (status === 429) return 'RATE_LIMITED';
   if (status === 401 || status === 403) return 'FORBIDDEN';
-  if (status === 413 || status === 415 || status === 400) return 'UPLOAD_REJECTED';
+  // 412 必须显式归到 UPLOAD_REJECTED：否则会落到末尾的 PARSE_ERROR，
+  // 界面上写成"页面结构无法解析"，把"图床拒收"说成"解析失败"，排障方向被带偏
+  // （实测 catbox.moe 匿名上传返回 412 Invalid uploader，就曾被说成解析问题）。
+  // UPLOAD_REJECTED 不在可重试集合里，顺带避免对注定失败的请求空转重试。
+  if (status === 400 || status === 412 || status === 413 || status === 415) return 'UPLOAD_REJECTED';
   if (status >= 500) return 'NETWORK_ERROR';
   if (detectCaptcha(status, body)) return 'CAPTCHA';
   return 'PARSE_ERROR';

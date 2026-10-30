@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-30T15:03:19.455Z",
+  "uploadStatus": 200,
+  "imageHostUrl": "https://tmpfiles.org/wQAVT2ew7f23/frame.jpg",
+  "fetchContentType": "text/html; charset=utf-8",
+  "usedUrl": "https://tmpfiles.org/wQAVT2ew7f23/frame.jpg",
+  "bingStatus": 302,
+  "iuscCount": 0,
+  "bingError": {
+    "code": "PARSE_ERROR",
+    "message": "引擎返回 HTTP 302"
+  }
+}

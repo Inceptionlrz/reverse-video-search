@@ -129,12 +129,23 @@ export const FAMILY_OF_STATUS = {
 };
 
 /* ===== 字典：错误码 → 人话（降级三要素的第一段） ===== */
+// PROXY_UNREACHABLE / FORBIDDEN 曾经漏在这里：errorText 回退成"未知原因"，
+// 用户看到的降级理由就成了"页面结构无法解析、未知原因、网络不可达"——
+// 明明是代理隧道没建起来，却说不知道为什么。缺文案比报错更误导，补齐。
 export const ERROR_COPY = {
   PROVIDER_DISABLED: '引擎已停用或正在熔断',
   NETWORK_ERROR: '网络不可达',
+  PROXY_UNREACHABLE: '代理隧道未建立',
   OFFLINE: '当前离线模式',
   TIMEOUT: '请求超时',
-  RATE_LIMIT: '触发限流',
+  // 键名必须是 RATE_LIMITED：服务端发的是这个（errors.mjs），
+  // 这里曾写成 RATE_LIMIT，于是限流也被回退成"未知原因"。
+  RATE_LIMITED: '触发限流',
+  FORBIDDEN: '引擎拒绝访问',
+  BAD_REQUEST: '请求参数不合法',
+  CONSENT_REQUIRED: '需要你的授权',
+  MEDIA_ERROR: '媒体处理失败',
+  CONFLICT: '状态冲突',
   CAPTCHA: '需要人机验证',
   UPLOAD_REJECTED: '图床拒绝上传',
   PARSE_ERROR: '页面结构无法解析',
