@@ -1,6 +1,7 @@
 node_modules/
 data/
 cache/
+out/
 .workbuddy/
 *.log
 nohup.out

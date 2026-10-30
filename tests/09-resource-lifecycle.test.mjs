@@ -58,12 +58,16 @@ describe('E2E 预备 A：资源生命周期（删除后 frames/DB 真正清零�
     const api = makeClient(app.server.address().port);
     const srcDir = path.join(tmp, 'src');
     fs.mkdirSync(srcDir, { recursive: true });
-    if (!(await requireMedia(t, cfg))) return;
-    const video = await makeTestVideo(srcDir);
+    // 顺序要紧：t.after 必须注册在 requireMedia 之前。
+    // 跳过时函数提前 return，若清理钩子还没注册，app 永不 close ——
+    // HTTP server 吊住事件循环，node --test 会挂到超时（实测 200s），
+    // 而三个用例本身早已 skip，看上去像"莫名卡死"而非"清理没做"。
     t.after(async () => {
       await app.close().catch(() => {});
       fs.rmSync(tmp, { recursive: true, force: true });
     });
+    if (!(await requireMedia(t, cfg))) return;
+    const video = await makeTestVideo(srcDir);
 
     // ---- 1. 建任务（JSON source_path：浏览器侧 multipart 另说，这里要的是可用的抽帧源）----
     const created = await api.post('/api/file-upload', {
@@ -181,12 +185,16 @@ describe('E2E 预备 A：资源生命周期（删除后 frames/DB 真正清零�
     const api = makeClient(app.server.address().port);
     const srcDir = path.join(tmp, 'src');
     fs.mkdirSync(srcDir, { recursive: true });
-    if (!(await requireMedia(t, cfg))) return;
-    const video = await makeTestVideo(srcDir);
+    // 顺序要紧：t.after 必须注册在 requireMedia 之前。
+    // 跳过时函数提前 return，若清理钩子还没注册，app 永不 close ——
+    // HTTP server 吊住事件循环，node --test 会挂到超时（实测 200s），
+    // 而三个用例本身早已 skip，看上去像"莫名卡死"而非"清理没做"。
     t.after(async () => {
       await app.close().catch(() => {});
       fs.rmSync(tmp, { recursive: true, force: true });
     });
+    if (!(await requireMedia(t, cfg))) return;
+    const video = await makeTestVideo(srcDir);
 
     const exportsDir = cfg.exportsDir;
     const thumbsDir = path.join(cfg.dataDir, 'thumbs');
@@ -230,12 +238,16 @@ describe('E2E 预备 A：资源生命周期（删除后 frames/DB 真正清零�
     const api = makeClient(app.server.address().port);
     const srcDir = path.join(tmp, 'src');
     fs.mkdirSync(srcDir, { recursive: true });
-    if (!(await requireMedia(t, cfg))) return;
-    const video = await makeTestVideo(srcDir);
+    // 顺序要紧：t.after 必须注册在 requireMedia 之前。
+    // 跳过时函数提前 return，若清理钩子还没注册，app 永不 close ——
+    // HTTP server 吊住事件循环，node --test 会挂到超时（实测 200s），
+    // 而三个用例本身早已 skip，看上去像"莫名卡死"而非"清理没做"。
     t.after(async () => {
       await app.close().catch(() => {});
       fs.rmSync(tmp, { recursive: true, force: true });
     });
+    if (!(await requireMedia(t, cfg))) return;
+    const video = await makeTestVideo(srcDir);
 
     const created = await api.post('/api/file-upload', {
       source_type: 'file', source_path: video, display_name: 'scaffold.mp4',

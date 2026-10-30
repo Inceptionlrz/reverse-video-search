@@ -30,10 +30,16 @@
   border-radius: var(--radius-md);
 }
 
-/* 触摸目标：移动端所有可点元素 ≥44×44（桌面可 28–32px） */
+/* 触摸目标：移动端所有可点元素 ≥44×44（桌面可 28–32px）
+   表单控件原本不在列表里——实测 select/textarea 在手机上仍是 32px 高，
+   拇指点不准。复选框/单选框除外：它们的点击目标是包裹它的 label，
+   强行 44×44 会把密集的设置行撑散。 */
 @media (pointer: coarse) {
-  :where(button, a, [role="button"], [role="tab"], [role="option"]) {
+  :where(button, a, [role="button"], [role="tab"], [role="option"],
+         input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
     min-height: 44px;
+  }
+  :where(button, a, [role="button"], [role="tab"], [role="option"]) {
     min-width: 44px;
   }
 }
@@ -88,7 +94,11 @@ svg { display: block; flex: none; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* 应用骨架 */
-.app { display: grid; grid-template-rows: var(--topbar-h) 1fr var(--statusbar-h); height: 100dvh; }
+/* 列必须写成 minmax(0, 1fr)：隐式 auto 列与 1fr 的基准尺寸都是内容最小尺寸，
+   撑不满就撑破——实测 320px 视口下 .app 的轨道被顶到 488px，整页横滚
+   （顶栏 488、底栏导航被拉到 488）。minmax(0,·) 把基准压到 0，轨道才会
+   真正受容器约束，溢出交给各层自己的 overflow 处理。 */
+.app { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--topbar-h) 1fr var(--statusbar-h); height: 100dvh; }
 .topbar { display: flex; align-items: center; gap: var(--space-4); padding: 0 var(--space-4); background: var(--surface); border-bottom: 1px solid var(--border); }
 .brand { display: flex; align-items: center; gap: var(--space-2); color: var(--fg); min-width: 0; }
 .brand__mark { color: var(--accent); }
@@ -97,7 +107,7 @@ svg { display: block; flex: none; }
 .topbar__center { flex: 1 1 auto; display: flex; align-items: center; gap: var(--space-2); min-width: 0; overflow: hidden; }
 .topbar__right { display: flex; align-items: center; gap: var(--space-2); }
 .net-indicator { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); color: var(--muted); }
-.app__body { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 0; }
+.app__body { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 0; }
 .sidebar { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3); background: var(--bg-sunken); border-right: 1px solid var(--border); }
 .nav-item { display: flex; align-items: center; gap: var(--space-3); height: 32px; padding: 0 var(--space-2); border-radius: var(--radius-md); color: var(--muted); text-decoration: none; font-weight: var(--weight-emphasize); }
 .nav-item:hover { background: var(--surface-hover); color: var(--fg); text-decoration: none; }

@@ -22,10 +22,14 @@ function engineTone(e) {
 function renderEngineStrip(health) {
   const host = qs('#engine-strip');
   if (!host) return;
+  // 引擎名包一层 span：窄屏只留状态圆点、隐去文字。
+  // 不加这层壳就只能整条 overflow 裁掉，实测 320px 下会切出 "Googl" "Yande" "Bin"
+  // 这种半截词——既不截断语义也不好看。留圆点仍能看到各引擎健康色。
   host.replaceChildren(...(health?.engines || []).map((e) => h('button', {
     class: 'chip', type: 'button', title: `${engineLabel(e.id)}：${e.enabled ? (e.circuit_open ? '熔断中' : '在线') : '已停用'}`,
     onclick: () => { location.assign('/engines'); },
-  }, h('span', { class: `dot dot--sm dot--${engineTone(e)}` }), engineLabel(e.id))));
+  }, h('span', { class: `dot dot--sm dot--${engineTone(e)}` }),
+     h('span', { class: 'chip__label', text: engineLabel(e.id) }))));
 }
 
 function renderNetIndicator(online) {
@@ -41,7 +45,10 @@ function renderStatusLeft(health) {
   host.replaceChildren(
     h('span', { class: 'statusbar__item', title: ff.version_line || ff.error || '' },
       icon(ff.available ? 'check-circle' : 'x-circle', 13), `ffmpeg ${ff.available ? '可用' : '不可用'}`),
-    h('span', { class: 'statusbar__item', title: health.db?.path || '' }, icon(health.db?.ok ? 'database' : 'x-circle', 13), `SQLite ${health.db?.ok ? '正常' : '异常'}`),
+    // opt 类：窄屏下隐藏。状态栏是 nowrap 等宽文本条，三项合计 362px 会把
+    // 320px 视口的移动端布局视口撑到 362（底栏导航跟着变宽、整页横滚）。
+    // SQLite 状态在手机上最不具操作性，让位给 ffmpeg 与网络态。
+    h('span', { class: 'statusbar__item statusbar__item--opt', title: health.db?.path || '' }, icon(health.db?.ok ? 'database' : 'x-circle', 13), `SQLite ${health.db?.ok ? '正常' : '异常'}`),
     h('span', { class: 'statusbar__item' }, icon(health.offline ? 'wifi-off' : 'globe', 13), health.offline ? '离线模式' : (health.proxy?.configured ? '经本地代理出站' : '直连出站')));
 }
 

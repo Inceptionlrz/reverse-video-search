@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, test } from 'node:test';
-import { makeClient, makeOfflineConfig, startApp } from './helpers.mjs';
+import { ffprobeBin, makeClient, makeOfflineConfig, mediaBinariesReady, requireMedia, startApp } from './helpers.mjs';
 import { spawnBinary } from '../server/lib/media/probe.mjs';
 import { createCancelToken } from '../server/lib/queue/token.mjs';
 
@@ -29,7 +29,15 @@ function sleep(ms) {
 
 // T1：取消令牌必须真的终止 ffmpeg 子进程（而非等它自然结束）
 describe('取消竞态（commit 取消令牌接入抽帧链路）', () => {
-  test('T1：abort 后 ffmpeg 子进程立即被杀——promise 以“已取消”拒绝', async () => {
+  test('T1：abort 后 ffmpeg 子进程立即被杀——promise 以“已取消”拒绝', async (t) => {
+    // T1 直接 spawn ffmpeg 造负重进程，没有 cfg 可传，所以走裸探测。
+    // 缺件时若不跳过，报错会是 ENOENT 而断言却期望「已取消」——失败原因被带偏。
+    // ffprobe 同样要读 env：写死 'ffprobe' 的话，只设了 RVS_FFPROBE 的机器
+    // 会探测失败 → T1 被误跳过（正是上一轮 83/1 的来源）。
+    if (!(await mediaBinariesReady({ ffmpeg: FFMPEG, ffprobe: ffprobeBin() })).ok) {
+      t.skip('跳过：本地 ffmpeg 不可用');
+      return;
+    }
     const token = createCancelToken();
     // 全片解码 300 秒素材：本机实测自然耗时约 19 秒，是取消耗时的百倍量级，
     // 因此“是否在 8 秒内返回”足以区分「被杀」与「跑完」。
@@ -58,6 +66,7 @@ describe('取消竞态（commit 取消令牌接入抽帧链路）', () => {
     const { cfg, tmp } = makeOfflineConfig();
     const app = await startApp(cfg);
     t.after(async () => { await app.close().catch(() => {}); });
+    if (!(await requireMedia(t, cfg))) return;
 
     const dir = fs.mkdtempSync(path.join(tmp, 'cancel-'));
     // 素材必须足够“重”：本机实测该规格抽 8 帧约需 14 秒，取消落在 300ms 时
@@ -108,6 +117,7 @@ describe('取消竞态（commit 取消令牌接入抽帧链路）', () => {
     const { cfg, tmp } = makeOfflineConfig();
     const app = await startApp(cfg);
     t.after(async () => { await app.close().catch(() => {}); });
+    if (!(await requireMedia(t, cfg))) return;
 
     // 建任务阶段 ffprobe 会拒绝损坏文件，拿不到任务；改为「建任务成功后再抽走源文件」，
     // 让失败发生在抽帧阶段，才能验证取消分支没有吞掉真实错误。

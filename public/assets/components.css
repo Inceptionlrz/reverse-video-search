@@ -84,7 +84,7 @@
 .inspector-score__sub { font-size: var(--text-xs); color: var(--meta); font-family: var(--font-mono); }
 
 /* 结果行 / 帧网格 / Inspector */
-.result { display: grid; grid-template-columns: 96px 1fr auto; gap: var(--space-3); padding: var(--space-2); border-bottom: 1px solid var(--divider); cursor: pointer; }
+.result { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: var(--space-3); padding: var(--space-2); border-bottom: 1px solid var(--divider); cursor: pointer; }
 .result:hover { background: var(--row-bg-hover); }
 .result--selected { background: var(--row-bg-selected); box-shadow: inset 2px 0 0 var(--row-border-selected); }
 .result__thumb { width: 96px; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); background: var(--surface-warm); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--meta); }
@@ -154,7 +154,7 @@
 .matrix__cell { background: var(--surface); padding: var(--space-1) var(--space-2); font-size: var(--text-xs); display: flex; align-items: center; gap: var(--space-1); min-height: 28px; }
 .matrix__cell--head, .matrix__cell--frame { background: var(--surface-warm); color: var(--muted); font-weight: var(--weight-emphasize); position: sticky; top: 0; }
 .matrix__cell--frame { position: sticky; left: 0; }
-.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--divider-strong); border-radius: var(--radius-lg); overflow: hidden; }
+.compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1px; background: var(--divider-strong); border-radius: var(--radius-lg); overflow: hidden; }
 .compare__pane { background: var(--surface); padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
 .compare__img { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: var(--bg-sunken); border-radius: var(--radius-md); }
 .compare__label { font-size: var(--text-sm); color: var(--muted); }
@@ -179,40 +179,105 @@
 }
 
 /* 响应式 */
-@media (max-width: 1279px) { .split { grid-template-columns: 280px 1fr; } .split__col--inspector { display: none; } }
+/* 所有 1fr 一律写作 minmax(0, 1fr)：1fr 的基准尺寸是内容最小尺寸，
+   容器装不下时轨道反而被顶宽（实测 320px 下把 .app 从 320 顶到 488）。 */
+@media (max-width: 1279px) { .split { grid-template-columns: 280px minmax(0, 1fr); } .split__col--inspector { display: none; } }
 @media (max-width: 1023px) {
-  .app__body { grid-template-columns: 56px; }
+  .app__body { grid-template-columns: 56px minmax(0, 1fr); }
   .nav-item { justify-content: center; padding: 0; }
   .nav-item__label, .sidebar__foot { display: none; }
-  .grid-2, .grid-2-even, .grid-3, .settings-grid { grid-template-columns: 1fr; }
-  .split { grid-template-columns: 240px 1fr; }
-  .cols-results { grid-template-columns: 72px 1fr 120px 96px; }
+  .grid-2, .grid-2-even, .grid-3, .settings-grid { grid-template-columns: minmax(0, 1fr); }
+  .split { grid-template-columns: 240px minmax(0, 1fr); }
+  .cols-results { grid-template-columns: 72px minmax(0, 1fr) 120px 96px; }
 }
 @media (max-width: 767px) {
   .app { grid-template-rows: var(--topbar-h) 1fr auto var(--statusbar-h); }
-  .app__body { grid-template-columns: 1fr; }
+  .app__body { grid-template-columns: minmax(0, 1fr); }
   .sidebar { position: fixed; bottom: 0; left: 0; right: 0; flex-direction: row; justify-content: space-around; border-right: 0; border-top: 1px solid var(--border); padding: var(--space-1); z-index: var(--z-sticky); }
   .sidebar__foot { display: none; }
-  .main { padding-bottom: 56px; }
-  .split { grid-template-columns: 1fr; min-height: 0; }
+  /* 底部导航是 fixed，主区必须留出等高的净空，否则最后一屏内容被永久遮住。
+     安全区同步计入：iPhone 上导航实际占 56px + home indicator。 */
+  .main { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+  .split { grid-template-columns: minmax(0, 1fr); min-height: 0; }
   .split__col--frames { max-height: 168px; }
   .frames { grid-auto-flow: column; grid-auto-columns: 120px; grid-template-columns: none; overflow-x: auto; }
   .view-root { padding: var(--section-y-phone) var(--container-gutter-phone) var(--space-8); }
-  .cols-results { grid-template-columns: 72px 1fr 96px; }
-  .result { grid-template-columns: 72px 1fr; }
+  .cols-results { grid-template-columns: 72px minmax(0, 1fr) 96px; }
+  .result { grid-template-columns: 72px minmax(0, 1fr); }
   .score-cell { width: 128px; }
-  .compare { grid-template-columns: 1fr; }
+  .compare { grid-template-columns: minmax(0, 1fr); }
+  /* 顶栏在窄屏只剩品牌 + 一个图标按钮：
+     - 品牌名不换行（min-width:0 会让它缩到竖排，实测"反向视频溯源"折成两行）
+     - 版本号让位
+     - 引擎健康条整个隐去。试过"只留圆点"，但每个 chip 是 44px 触控目标，
+       三个点摊在 133px 里显得稀疏，信息量还不如不给；引擎健康在「引擎诊断」
+       页一跳即达，每次发起检索前的授权弹窗也会逐引擎列出可达性，不缺这一处。 */
+  .brand__name { white-space: nowrap; }
+  .brand__ver { display: none; }
+  .topbar__center { display: none; }
+  .topbar { gap: var(--space-2); padding: 0 var(--space-2); }
+
   .statusbar__center { display: none; }
+  /* 窄屏只留 ffmpeg 与网络态；再叠加 overflow 兜底，任何一项文案变长都不会
+     把布局视口顶宽（实测「SQLite 正常」一项就让 320px 视口涨到 362px）。 */
+  .statusbar__item--opt { display: none; }
+  /* 光裁掉不够：320px 上剩下的两项仍会顶到 336px，被 overflow 切掉半截文字，
+     看着像渲染故障。收紧间距 + 允许省略号，让文案自己退让而不是被硬切。 */
+  .statusbar { overflow: hidden; gap: var(--space-2); padding: 0 var(--space-2); }
+  .statusbar__left, .statusbar__right { min-width: 0; overflow: hidden; }
+  .statusbar__item { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* 上面三个容器默认是 nowrap，装多个按钮时在 ≤360px 屏上必然溢出（横滚）。
      换行是唯一稳妥解：按钮组在窄屏纵向堆叠，不牺牲任何可点性。 */
   .row, .consent-row { flex-wrap: wrap; }
   .modal__foot { flex-wrap: wrap; justify-content: stretch; }
   .modal__foot > .btn { flex: 1 1 auto; }
+
+  /* 遮挡一：Toast 是 fixed 右下角、z-index 1300，而 ≤767px 时底部导航也是
+     fixed bottom:0（z-index 100）。两者叠在屏幕右下角，Toast 会整个盖住导航。
+     把 Toast 抬到导航之上（56px 导航 + 间距 + iPhone home indicator 安全区）。 */
+  .toast-stack {
+    left: var(--container-gutter-phone);
+    right: var(--container-gutter-phone);
+    bottom: calc(56px + var(--space-2) + env(safe-area-inset-bottom, 0px));
+  }
+  .toast {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+
+  /* 遮挡二：弹窗 86dvh 居中，上下各留 7dvh。640px 高的屏 7dvh≈45px < 56px
+     导航，弹窗底部会压在导航条下面。收到 78dvh 并计入安全区。 */
+  .modal { max-height: calc(78dvh - env(safe-area-inset-bottom, 0px)); }
+  .modal-backdrop { padding: var(--space-3); }
+
+  /* 遮挡三：底部导航本身要避开 iPhone home indicator，否则最后 34px 是
+     不可点的玻璃条。用 padding 而非 height，图标位置由 flex 居中决定。 */
+  .sidebar {
+    padding: var(--space-1) var(--space-1) calc(var(--space-1) + env(safe-area-inset-bottom, 0px));
+  }
 }
+
+/* 筛选栏分组默认 nowrap：结果页一组就是 140+132+150+按钮≈494px，日志页一组
+   120+130+240≈490px，在 ≤360px 屏上必然横向溢出。flex-wrap 只在装不下时才生效，
+   桌面布局不受影响，所以直接开在全局而非断点内。 */
+.toolbar__group { flex-wrap: wrap; }
 
 /* 长串兜底：URL / 文件路径 / 哈希这类无空格长 token 会顶宽容器，
    在没有 break-all 的地方统一允许断行，避免出现横向滚动。 */
 body { overflow-wrap: break-word; }
+
+/* 筛选控件把宽度写在内联 style 上（width:'200px'），而内联样式优先级高于任何
+   媒体查询——断点里写 width:100% 根本覆盖不掉，窄屏必然横滚。能压住内联的只有
+   !important，这是本文件里 !important 的唯一正当用途，别处不要照抄。
+   另一条路是改掉 16 处内联 width，但那会让桌面端失去现在紧致的筛选栏，故取此解。 */
+@media (max-width: 767px) {
+  .input, .select, .textarea { max-width: 100% !important; }
+  /* 日志页的筛选条是 .logs-toolbar（不是 .toolbar），要一并覆盖，
+     否则 120/130/240px 的内联宽度在 320px 屏上照样溢出。 */
+  .toolbar .input, .toolbar .select,
+  .logs-toolbar .input, .logs-toolbar .select { width: 100% !important; }
+}
 
 /* 表格若有朝一日被启用，必须有横向滚动容器，否则 nowrap 表头会顶宽整页。 */
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
