@@ -22,7 +22,7 @@
 
 | 引擎 | 深链 | 直传 | 图床桥接 | 当前实际 |
 |---|---|---|---|---|
-| Bing 图片 | 已验证 | 未验证（端点实测 400/404） | 已验证 | **需可用图床**，否则手动 |
+| Bing 图片 | 已验证（端到端复跑见下） | 未验证（端点实测 400/404） | 已验证 | **配好 GitHub 图床即可自动** |
 | Yandex 图片 | 未验证 | 未验证 | 未验证 | 会尝试，结果不保证 |
 | Google Lens | 实测不可用 | 端点接受上传 | 不可用 | **只能手动** |
 
@@ -55,16 +55,45 @@ Lens 这一路的手动成本已尽量压低：任务详情页 → **手动跑�
 另测过 litterbox（"No file!"）、uguu.se（不稳）、pixeldrain（401 需 key）、
 telegra.ph（400）、bashupload / envs.sh / oshi.at（不可达）：**当前没有可用的匿名图床**。
 
-因此在这台机器上，Bing / Yandex 也走不通自动链路，会如实降级为手动——
-**不是你的操作问题，是上游没有可用的匿名图床了**。想让桥接真正跑通，
-可选的路只有：自备 catbox 账号（填 `RVS_CATBOX_USERHASH`），或改用自己的私有图床。
+### GitHub 图床：当前唯一实测跑通的方案
 
-顺带修掉的两个「假成功 / 误导」：
+与其再赌一家第三方，改用你自己已经拥有的 GitHub（Contents API 提交 + `raw.githubusercontent.com` 直链）：
 
+```bash
+export RVS_GITHUB_TOKEN=ghp_xxx        # 需 Contents 写权限
+export RVS_GITHUB_REPO=owner/repo
+export RVS_GITHUB_BRANCH=frames        # 默认；建议用孤立分支，与主分支历史隔离
+```
+
+端到端实测（2026-10-30，`scripts/probe/20-bridge-e2e.mjs`）：
+
+```
+[1] 上传: ok=true status=201
+    直链: https://raw.githubusercontent.com/<repo>/frames/2026-10-30/probe-xxx.jpg
+[2] 检索: ok=true status=200 items=35 耗时=1579ms
+出站请求数: 图床=1 引擎=4
+桥接链路可用
+```
+
+**代价必须说清**：帧会**公开可见**并**留在 git 历史里**（删掉分支历史才消失）。
+所以默认用孤立分支 `frames`，既不污染主分支历史，也不触发 Pages 重建。
+
+### 顺带修掉的三个「假成功 / 误导」
+
+- **深链死代码**（最严重）：Bing 深链返回 302，而 `request()` 不自动跟随 3xx、
+  且 3xx 不是 `res.ok`。旧代码把 `if (!res.ok) return` 写在跟随分支之前，
+  302 在第一跳就被判失败——**后面整段跟随代码永不执行**。界面写「页面结构无法解析」，
+  真实原因却是「压根没跟到结果页」。跟随分支已上提到基类 `searchByDeeplink`，
+  并改用实测可达的 `view=detailv2` 形态（旧形态跟随后是 404）。
 - 图床返回链接后**必须校验 `content-type` 为 `image/*`** 才放行
   （`classifyImageUrl`）。否则 tmpfiles 那种 HTML 预览页会被当成成功，
   引擎拿网页去搜图 → 36 个组合跑完全是空结果，而失败原因还写成"解析失败"。
 - 412 不再归为 `PARSE_ERROR`：界面会写成「图床拒绝上传」而不是「页面结构无法解析」。
+
+另修一处**配置静默失效**：超时配置存在 `cfg.net.*`，而 `request()` 读的是顶层
+`cfg.connectTimeoutMs`——把预算从 1s 放宽到 3s 后实际仍按 1s 走，
+表现为「代理只是慢，却被判代理不可达」。现由 `resolveTimeouts()` 统一解析，
+两种形态都认，并有测试钉死（`tests/20-redirect-follow.test.mjs`）。
 
 ## 环境要求
 
@@ -111,6 +140,7 @@ Pages 站点的作用是说明项目、给出安装与验证步骤。
 | `RVS_DATA_DIR` | `<项目>/data` | 数据库、帧、导出目录 |
 | `RVS_FFMPEG` / `RVS_FFPROBE` | `ffmpeg` / `ffprobe` | 二进制路径或命令名 |
 | `RVS_CATBOX_USERHASH` | 空 | catbox 账号 hash。匿名上传已被拒（412），填了才可能用 |
+| `RVS_GITHUB_TOKEN` / `RVS_GITHUB_REPO` / `RVS_GITHUB_BRANCH` | 空 / 空 / `frames` | GitHub 图床。三者中 token 与 repo 都设了才启用（当前唯一实测跑通的图床） |
 | `RVS_NET_*_TIMEOUT_MS` | 3000/8000/10000/30000 | 隧道/TLS/首字节/整体超时。走慢代理时可调 |
 | `RVS_PROXY` | `http://127.0.0.1:7897` | 出站代理；不需要外网时设为空串 |
 | `RVS_OFFLINE` | `0` | `1` = 完全离线，不发任何外网请求 |

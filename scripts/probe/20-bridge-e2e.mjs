@@ -1,72 +1,60 @@
-// 桥接端到端实测：上传帧到图床 → 拿公网 URL → 喂引擎 deep link → 看有没有结果。
+// 桥接端到端实测（走项目自己的模块，不复制一份逻辑）：
+//   上传帧到图床 → 拿到公网 URL → 校验确实是图片 → 喂引擎深链 → 数结果。
 //
-// 单测"上传成功"没意义：图床返回的常是 HTML 预览页而非图片本体，
-// 引擎拿这种 URL 去以图搜图会拿到空结果甚至报错。只有把整条链路跑通，
-// 才能说"桥接这条路是活的"。19 号探针只测到上传，这一支测到结果。
+// 只有整条链路跑通才能说"桥接是活的"：
+//   - 单测"上传成功"没意义——图床常返回 HTML 预览页而非图片本体（tmpfiles 实测如此），
+//     引擎拿这种 URL 只能得到空结果，而上层只看到"上传成功"；
+//   - 只看深链也不行——深链 200 不代表跟到了结果页（302 不跟随就是死在第一跳）。
 //
-// 用法：node scripts/probe/20-bridge-e2e.mjs [代理URL]
-
+// 用法：
+//   RVS_GITHUB_TOKEN=xxx RVS_GITHUB_REPO=owner/repo node scripts/probe/20-bridge-e2e.mjs
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildMultipart } from '../../server/lib/http/multipart.mjs';
-import { request } from '../../server/lib/http/request.mjs';
+import { loadConfig } from '../../server/lib/config.mjs';
+import { createMetrics } from '../../server/providers/base.mjs';
+import { createGitHubHost } from '../../server/providers/imagehost/github.mjs';
+import { createBingProvider } from '../../server/providers/bing.mjs';
 
 const HERE = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
-const PROXY = process.argv[2] ?? (process.env.RVS_PROXY === undefined ? 'http://127.0.0.1:7897' : process.env.RVS_PROXY);
-const buf = fs.readFileSync(path.join(HERE, 'test-realframe.jpg'));
+const cfg = loadConfig(process.env);
+const host = createGitHubHost();
+const provider = createBingProvider();
+const metrics = createMetrics();
+const ctx = { cfg, metrics };
 
-const cfg = { proxy: PROXY, connectTimeoutMs: 5000, tlsTimeoutMs: 12000, ttfbTimeoutMs: 15000, totalTimeoutMs: 40000 };
-
-// 1) 上传
-const mp = buildMultipart({
-  fields: [],
-  files: [{ field: 'file', filename: 'frame.jpg', contentType: 'image/jpeg', content: buf }],
-});
-const up = await request('https://tmpfiles.org/api/v1/upload', {
-  config: cfg, proxy: PROXY, method: 'POST',
-  headers: { 'Content-Type': mp.contentType }, body: mp.body,
-});
-console.log('上传:', up.status, String(up.body || '').slice(0, 120));
-if (!up.ok) process.exit(1);
-
-let url = null;
-try {
-  const j = JSON.parse(String(up.body || ''));
-  url = j?.data?.url || j?.url || null;
-} catch { /* 非 JSON */ }
-if (!url) { console.log('无法从响应解析 URL'); process.exit(1); }
-console.log('图床 URL:', url);
-
-// 2) 该 URL 是否真返回图片（引擎要能直接取到图）
-const img = await request(url, { config: cfg, proxy: PROXY, method: 'GET' });
-const ct = String(img.headers?.['content-type'] || '');
-console.log(`取图: status=${img.status} content-type=${ct} bytes=${String(img.body || '').length}`);
-const isImage = ct.startsWith('image/');
-
-// 3) 若不是图片，试 tmpfiles 的直连形态
-let publicUrl = url;
-if (!isImage) {
-  const m = /tmpfiles\.org\/([A-Za-z0-9]+)\//.exec(url);
-  if (m) {
-    for (const cand of [`https://tmpfiles.org/dl/${m[1]}`, `https://tmpfiles.org/${m[1]}/frame.jpg`]) {
-      const r = await request(cand, { config: cfg, proxy: PROXY, method: 'GET' });
-      const c2 = String(r.headers?.['content-type'] || '');
-      console.log(`  候选 ${cand}: status=${r.status} type=${c2}`);
-      if (r.ok && c2.startsWith('image/')) { publicUrl = cand; break; }
-    }
-  }
+if (!host.configured()) {
+  console.error('未配置 GitHub 图床：需要 RVS_GITHUB_TOKEN 与 RVS_GITHUB_REPO（owner/repo）');
+  process.exit(2);
 }
 
-// 4) 喂给 Bing deep link
-const target = `https://www.bing.com/images/searchbyimage/upload?imgurl=${encodeURIComponent(publicUrl)}&cbir=sbi`;
-const res = await request(target, { config: cfg, proxy: PROXY, method: 'GET' });
-const iusc = String(res.body || '').match(/class="[^"]*\biusc\b[^"]*"/gi) || [];
-console.log(`Bing deep link: status=${res.status} iusc 结果项=${iusc.length} latency=${res.latencyMs}ms`);
-if (!res.ok) console.log('失败:', res.errorCode, res.errorMessage);
+const buf = fs.readFileSync(path.join(HERE, 'test-realframe.jpg'));
+console.log(`图床: ${host.label}  分支: ${host.branch}`);
+console.log(`引擎: ${provider.label}  代理: ${cfg.proxy || '(无)'}`);
+console.log('');
 
-fs.writeFileSync(
-  path.join(HERE, 'out-20-bridge-e2e.json'),
-  JSON.stringify({ at: new Date().toISOString(), uploadStatus: up.status, imageHostUrl: url,
-    fetchContentType: ct, usedUrl: publicUrl, bingStatus: res.status, iuscCount: iusc.length,
-    bingError: res.errorCode ? { code: res.errorCode, message: res.errorMessage } : null }, null, 2)
-);
+// 1) 上传
+const up = await host.upload({ ...ctx, providerId: host.id }, { buffer: buf, filename: `probe-${Date.now()}.jpg` });
+console.log(`[1] 上传: ok=${up.ok} status=${up.httpStatus ?? '-'}`);
+if (!up.ok) {
+  console.log(`    失败: ${up.errorCode} — ${up.errorMessage}`);
+  process.exit(1);
+}
+console.log(`    直链: ${up.url}`);
+
+// 2) 深链检索（这一步同时覆盖"链接真能被引擎取到"——取不到就没有结果）
+const started = Date.now();
+const res = await provider.searchByDeeplink({ ...ctx, providerId: provider.id }, up.url);
+console.log(`[2] 检索: ok=${res.ok} status=${res.httpStatus ?? '-'} items=${res.items?.length ?? 0} 耗时=${Date.now() - started}ms`);
+if (!res.ok) {
+  console.log(`    失败: ${res.errorCode} — ${res.errorMessage}`);
+  process.exit(1);
+}
+console.log(`    落地页: ${res.requestUrl}`);
+for (const it of (res.items || []).slice(0, 5)) {
+  console.log(`      #${it.rank} ${it.title || '(无标题)'} -> ${it.url}`);
+}
+
+console.log('');
+console.log(`出站请求数: 图床=${metrics.imagehostRequests[host.id] ?? 0} 引擎=${metrics.providerRequests[provider.id] ?? 0}`);
+console.log(res.items?.length ? '桥接链路可用' : '桥接链路通了但零结果');
+process.exit(res.items?.length ? 0 : 1);

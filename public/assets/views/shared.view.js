@@ -3,6 +3,7 @@ import { h, icon, skeletonRows, skeletonResults, modal, toast, copyText, safeHtt
 import { api, errText } from '../api.js';
 import {
   fmtScore, fmtSim, fmtAgo, fmtDateTime, fmtDuration, engineLabel, errorText, EMPTY_COPY,
+  IMAGEHOST_OPTIONS, IMAGEHOST_LABEL,
 } from '../format.js';
 
 /** 状态点：颜色之外必须带图标或文案（无障碍双重编码）。 */
@@ -232,8 +233,12 @@ export function consentModal({
     engines: h('input', { type: 'checkbox', id: 'consent-engines' }),
     bridge: h('input', { type: 'checkbox', id: 'consent-bridge' }),
   };
+  // 选项与设置页同一份 IMAGEHOST_OPTIONS，避免两边漂移。
+  // 默认跟设置页的 provider 走：用户已在设置页选过站点时，不必每次弹窗重选。
   const hostSelect = h('select', { class: 'select', id: 'consent-host', disabled: true, style: { width: '180px' } },
-    h('option', { value: '', text: '选择站点' }), h('option', { value: 'catbox', text: 'catbox' }), h('option', { value: '0x0', text: '0x0.st' }), h('option', { value: 'tmpfiles', text: 'tmpfiles' }));
+    h('option', { value: '', text: '选择站点' }),
+    ...IMAGEHOST_OPTIONS.map((o) => h('option', { value: o.id, text: o.label, selected: imagehost?.provider === o.id })));
+  if (imagehost?.provider) host = imagehost.provider;
   checks.bridge.addEventListener('change', () => { hostSelect.disabled = !checks.bridge.checked; if (!checks.bridge.checked) host = null; });
   hostSelect.addEventListener('change', () => { host = hostSelect.value || null; });
 
@@ -245,7 +250,7 @@ export function consentModal({
     : !bridgeOn
       ? '设置页已关闭图床桥接，勾选不会生效；需要先到设置页打开。'
       : imagehost.provider
-        ? `默认站点：${imagehost.provider}（可在此处改为其他站点，仅本次生效）。`
+        ? `默认站点：${IMAGEHOST_LABEL[imagehost.provider] || imagehost.provider}（可在此处改为其他站点，仅本次生效）。`
         : '设置页未选默认站点——在此处选择一个站点即可，仅对本任务生效。';
   if (!bridgeOn) {
     checks.bridge.disabled = true;

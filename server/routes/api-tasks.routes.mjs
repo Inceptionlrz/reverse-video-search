@@ -4,9 +4,11 @@ import { randomUUID } from 'node:crypto';
 import { readBody, sendFail, sendOk } from '../lib/server/json.mjs';
 import { readMultipart } from '../lib/http/multipart-read.mjs';
 import { badRequest } from '../lib/errors.mjs';
+import { listImageHostIds } from '../providers/imagehost/registry.mjs';
 
 export function registerTaskRoutes(router, ctx) {
   const { taskService, analysisService, frameService } = ctx.services;
+  const IMAGEHOST_IDS = listImageHostIds();
 
   // POST /api/file-upload：multipart 文件或 JSON（source_path / source_url）
   router.post('/api/file-upload', async (req, res, { requestId }) => {
@@ -73,7 +75,14 @@ export function registerTaskRoutes(router, ctx) {
       imagehost: body.imagehost ?? body.scope?.imagehost ?? null,
     };
     if (!scope.engines) throw badRequest('确认外发必须授权 engines（把帧发送到公开搜索引擎）');
-    if (scope.bridge && !scope.imagehost) throw badRequest('授权图床桥接必须同时选择站点（catbox / 0x0 / tmpfiles）');
+    // 站点名单从注册表派生：写死三个名字会漏掉后加的 github 图床，
+    // 用户照着旧提示去选，永远选不到唯一可用的那家。
+    if (scope.bridge && !scope.imagehost) {
+      throw badRequest(`授权图床桥接必须同时选择站点（可选：${IMAGEHOST_IDS.join(' / ')}）`);
+    }
+    if (scope.bridge && !IMAGEHOST_IDS.includes(scope.imagehost)) {
+      throw badRequest(`未知图床站点：${scope.imagehost}（可选：${IMAGEHOST_IDS.join(' / ')}）`);
+    }
     await analysisService.recordConsent(params.id, scope);
     const task = await taskService.setStatus(params.id, { confirmed: 1 });
     return sendOk(res, { task, consent: scope }, { requestId });

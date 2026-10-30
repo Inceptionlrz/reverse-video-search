@@ -5,3 +5,5 @@ out/
 .workbuddy/
 *.log
 nohup.out
+# 探针产物（scripts/probe/* 写出的实测证据，不入库）
+scripts/probe/out-*

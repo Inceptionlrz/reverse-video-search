@@ -63,14 +63,22 @@ function failure(errorCode, message, extra = {}) {
   };
 }
 
+// 超时解析。config.mjs 把超时放在 cfg.net 下，而早期调用方（探针脚本、测试）
+// 传的是平铺的 { connectTimeoutMs, ... }。两边都要认，否则会出现
+// "配置里改成了 30s，实际仍按 15s 超时"——配置值被静默无视，排障时极难定位。
+export function resolveTimeouts(cfg, options = {}) {
+  const net = cfg?.net || cfg || {};
+  return {
+    connect: options.connectTimeoutMs ?? net.connectTimeoutMs ?? 1000,
+    tls: options.tlsTimeoutMs ?? net.tlsTimeoutMs ?? 3000,
+    ttfb: options.ttfbTimeoutMs ?? net.ttfbTimeoutMs ?? 5000,
+    total: options.totalTimeoutMs ?? net.totalTimeoutMs ?? 15000,
+  };
+}
+
 export function request(targetUrl, options = {}) {
   const cfg = options.config || {};
-  const timeouts = {
-    connect: options.connectTimeoutMs ?? cfg.connectTimeoutMs ?? 1000,
-    tls: options.tlsTimeoutMs ?? cfg.tlsTimeoutMs ?? 3000,
-    ttfb: options.ttfbTimeoutMs ?? cfg.ttfbTimeoutMs ?? 5000,
-    total: options.totalTimeoutMs ?? cfg.totalTimeoutMs ?? 15000,
-  };
+  const timeouts = resolveTimeouts(cfg, options);
   const maxBody = options.maxBodyBytes ?? 4 * 1024 * 1024;
   const agent = options.agent || createAgent(options.proxy ?? cfg.proxy ?? '', {
     connectTimeoutMs: timeouts.connect,

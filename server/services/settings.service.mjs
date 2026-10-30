@@ -3,6 +3,7 @@
 // 只读项（来自启动环境变量，改需重启）：监听地址/端口、代理、超时预算、并发、日志级别。
 import { badRequest } from '../lib/errors.mjs';
 import { getConfig } from '../lib/config.mjs';
+import { listImageHostIds } from '../providers/imagehost/registry.mjs';
 
 export const DEFAULT_SETTINGS = {
   extract: {
@@ -19,7 +20,7 @@ export const DEFAULT_SETTINGS = {
   },
   imagehost: {
     enabled: true, // 用户决策：图床桥接默认开；但具体站点仍需显式选择
-    provider: null, // 'catbox' | '0x0' | 'tmpfiles'，null = 未选择（桥接不可用）
+    provider: null, // 站点 id 见 listImageHostIds()；null = 未选择（桥接不可用）
   },
   similarity: {
     compute_thumb_hash: false, // 开启后会临时下载结果缩略图算本地哈希（不落盘）
@@ -30,7 +31,11 @@ export const DEFAULT_SETTINGS = {
 };
 
 const EXTRACT_MODES = ['interval', 'scene', 'both'];
-const IMAGEHOST_IDS = ['catbox', '0x0', 'tmpfiles'];
+// 从注册表派生，不手写第三份名单。
+// 曾经手写死三家匿名图床：后端新增 github 图床后，用户选了 github 点保存，
+// 白名单不认识它 → 整条赋值被跳过、provider 保持 null。界面提示"已保存"，
+// 桥接却依旧不可用，且没有任何报错——最难排查的一类失败。
+const IMAGEHOST_IDS = listImageHostIds();
 
 function clampInt(value, min, max, fallback) {
   const n = Number.parseInt(value, 10);

@@ -203,7 +203,18 @@ export const AVAILABILITY_TEXT = {
   unavailable: { label: '实测不可用', tone: 'failed' },
 };
 
-export const IMAGEHOST_LABEL = { catbox: 'catbox', '0x0': '0x0.st', tmpfiles: 'tmpfiles' };
+// 图床选项的单一来源。三处下拉（设置页默认站点 / 任务确认弹窗 / 引擎页展示）
+// 必须都从这里取，否则又会出现「UI 承诺与执行层实际是两套数据源」——
+// 后端加了 github 图床、界面下拉里却没有，用户根本选不到，桥接依旧全降级为手动。
+// 顺序即推荐顺序：github 是唯一实测跑通的一家，放首位。
+export const IMAGEHOST_OPTIONS = [
+  { id: 'github', label: 'GitHub 直链（自有仓库）', hint: '需先设 RVS_GITHUB_TOKEN 与 RVS_GITHUB_REPO；帧会公开可见并留在 git 历史' },
+  { id: 'catbox', label: 'catbox.moe', hint: '匿名上传实测被拒（412），需自备账号填 RVS_CATBOX_USERHASH' },
+  { id: '0x0', label: '0x0.st', hint: '实测不可达（TLS 连接即断）' },
+  { id: 'tmpfiles', label: 'tmpfiles.org', hint: '上传成功但链接是 HTML 预览页，引擎取不到图' },
+];
+
+export const IMAGEHOST_LABEL = Object.fromEntries(IMAGEHOST_OPTIONS.map((o) => [o.id, o.label]));
 
 export const EXTRACT_MODE_TEXT = { interval: '固定间隔', scene: '场景切换', both: '场景 + 间隔' };
 export const extractModeText = (m) => EXTRACT_MODE_TEXT[m] || m || '—';

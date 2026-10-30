@@ -26,6 +26,22 @@ export function classifyImageUrl(probe) {
   return { ok: true, reason: null };
 }
 
+/**
+ * 实取一次链接，确认它真的是图片。
+ * 抽出来是为了让不走 multipart 的图床（如 GitHub Contents API）也能复用同一套判据。
+ */
+export async function verifyImageUrl(ctx, url) {
+  const probe = await request(url, {
+    method: 'GET',
+    config: ctx?.cfg,
+    proxy: ctx?.cfg?.proxy,
+    maxBodyBytes: 1024,
+    ttfbTimeoutMs: ctx?.cfg?.net?.ttfbTimeoutMs,
+    totalTimeoutMs: ctx?.cfg?.net?.totalTimeoutMs,
+  });
+  return classifyImageUrl(probe);
+}
+
 export class BaseImageHost {
   constructor({ id, label, endpoint, retention, verified = false, notes = '' }) {
     this.id = id;
@@ -70,17 +86,9 @@ export class BaseImageHost {
     // 却返回 text/html（3KB 预览页），拿它去喂引擎 deep link 只能得到空结果，
     // 而上层只看到"上传成功"，失败被推迟成莫名其妙的"页面结构无法解析"。
     // 这里当场校验 content-type，把假成功变成明确失败。
-    const probe = await request(url, {
-      method: 'GET',
-      config: ctx?.cfg,
-      proxy: ctx?.cfg?.proxy,
-      maxBodyBytes: 1024,
-      ttfbTimeoutMs: ctx?.cfg?.net?.ttfbTimeoutMs,
-      totalTimeoutMs: ctx?.cfg?.net?.totalTimeoutMs,
-    });
     // 注意：我们自己都取不到，引擎更取不到——不能算成功。
     // 措辞留余地：本地网络抖动也会走到这里，别把话说成图床坏了。
-    const verdict = classifyImageUrl(probe);
+    const verdict = await verifyImageUrl(ctx, url);
     if (!verdict.ok) {
       return {
         ok: false,

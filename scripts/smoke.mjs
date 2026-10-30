@@ -24,7 +24,7 @@ function check(name, condition, detail = '') {
   }
 }
 
-async function makeTestVideo(dir) {
+async function makeTestVideo(dir, bin) {
   const file = path.join(dir, 'smoke-input.mp4');
   // 三段结构差异明显的测试源（实测 dHash 两两距离 27~35，远超阈值 6）：
   //   smptehdbars（彩条）/ rgbtestsrc（渐变）/ testsrc（经典图案），各 2 秒。
@@ -40,24 +40,30 @@ async function makeTestVideo(dir) {
     '-t', '6',
     file, '-y',
   ];
-  await spawnBinary('ffmpeg', args, { timeoutMs: 60000 });
+  // 二进制路径必须走配置，不能写死 'ffmpeg'：没把 ffmpeg 放进 PATH 的机器上，
+  // 只有 RVS_FFMPEG 指了路才找得到，写死就等于"装了也报 ENOENT"。
+  await spawnBinary(bin, args, { timeoutMs: 60000 });
   return file;
 }
 
 async function main() {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rvs-smoke-'));
+  // 显式 env 不下落到 process.env：这里用到的每一项都得自己带上，
+  // 否则 RVS_FFMPEG / RVS_FFPROBE 指了路径也会被无视（表现为"装了 ffmpeg 也 ENOENT"）。
   const cfg = loadConfig(
     {
       RVS_DATA_DIR: path.join(tmpRoot, 'data'),
       RVS_OFFLINE: '1',
       RVS_LOG_LEVEL: 'warn',
       RVS_PORT: '0',
+      RVS_FFMPEG: process.env.RVS_FFMPEG,
+      RVS_FFPROBE: process.env.RVS_FFPROBE,
     },
     REPO_ROOT,
   );
   console.log(`[smoke] 临时数据目录：${cfg.dataDir}`);
 
-  const video = await makeTestVideo(tmpRoot);
+  const video = await makeTestVideo(tmpRoot, cfg.ffmpeg);
   console.log('[smoke] 测试视频已生成');
 
   const app = await createApp({ config: cfg });

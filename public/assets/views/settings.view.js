@@ -3,7 +3,7 @@
 import { h, icon, qs, toast } from '../dom.js';
 import { api, errText } from '../api.js';
 import { store, setTheme } from '../store.js';
-import { extractModeText, engineLabel } from '../format.js';
+import { extractModeText, engineLabel, IMAGEHOST_OPTIONS } from '../format.js';
 import { loadingBlock, errorBlock, offlineBlock } from './shared.view.js';
 
 export default {
@@ -133,6 +133,15 @@ export default {
 
     function imagehostSection(ih) {
       if (!ih) return null;
+      // 站点说明随选择变化：每家的可用性差别很大（三家匿名图床实测均不可用），
+      // 不写清就会有人勾了 tmpfiles 以为能用，跑完才发现全降级为手动。
+      // 直接持有节点引用，不用 getElementById + setTimeout 那种时序脆弱的写法。
+      const hintEl = h('div', { class: 'settings-row__desc' });
+      const syncHostHint = () => {
+        const picked = IMAGEHOST_OPTIONS.find((o) => o.id === ih.provider);
+        hintEl.textContent = picked ? picked.hint : '未选择站点——桥接不可用，作业会降级为手动检索。';
+      };
+      syncHostHint();
       return panel('图床桥接', '开启总开关后，每个任务仍需在确认弹窗里单独勾选桥接并选择站点。',
         h('div', { class: 'settings-row' },
           h('div', { class: 'settings-row__text' }, h('div', { class: 'settings-row__label', text: '允许图床桥接' }), h('div', { class: 'settings-row__desc', text: '先把帧临时上传到图床换公网 URL，再走深链。帧会短暂离开本机。' })),
@@ -140,12 +149,12 @@ export default {
         h('div', { class: 'settings-row' },
           h('div', { class: 'settings-row__text' }, h('div', { class: 'settings-row__label', text: '默认站点' }), h('div', { class: 'settings-row__desc', text: '不选站点时桥接不可用，作业会降级为手动检索。' })),
           h('div', { class: 'settings-row__ctl' }, h('div', { class: 'select-wrap' },
-            h('select', { class: 'select', onchange: (ev) => { ih.provider = ev.target.value || null; markDirty(true); } },
+            h('select', { class: 'select', onchange: (ev) => { ih.provider = ev.target.value || null; syncHostHint(); markDirty(true); } },
               h('option', { value: '', text: '未选择', selected: !ih.provider }),
-              h('option', { value: 'catbox', text: 'catbox', selected: ih.provider === 'catbox' }),
-              h('option', { value: '0x0', text: '0x0.st', selected: ih.provider === '0x0' }),
-              h('option', { value: 'tmpfiles', text: 'tmpfiles', selected: ih.provider === 'tmpfiles' })),
-            icon('chevron-down', 14, 'select__caret')))));
+              ...IMAGEHOST_OPTIONS.map((o) => h('option', { value: o.id, text: o.label, selected: ih.provider === o.id }))),
+            icon('chevron-down', 14, 'select__caret')))),
+        h('div', { class: 'settings-row' },
+          h('div', { class: 'settings-row__text' }, h('div', { class: 'settings-row__label', text: '站点说明' }), hintEl)));
     }
 
     function similaritySection(sim) {
