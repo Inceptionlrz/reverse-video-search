@@ -10,6 +10,10 @@ export const ERROR_CODES = {
   // 而是"该引擎的结果只能在浏览器里渲染，HTTP 层根本取不到数据"（Google Lens 实测如此）。
   // 混用 PARSE_ERROR 会把用户引向"改解析规则"的错误排障方向。
   ENGINE_NO_HTTP_RESULT: 422,
+  // 与 NETWORK_ERROR 同状态但语义不同：失败发生在**图床上传**环节，不是引擎请求环节。
+  // 混用 NETWORK_ERROR 会让界面把"图床传不上去"报成"引擎网络异常"，
+  // 用户照着去查引擎连通性，而真实要查的是图床凭据/网络/配额。
+  IMAGEHOST_UPLOAD_FAILED: 502,
   UPLOAD_REJECTED: 413,
   PROXY_UNREACHABLE: 502,
   PROVIDER_DISABLED: 503,
@@ -32,6 +36,9 @@ export function httpStatusFor(code) {
 export const RETRYABLE_ERROR_CODES = Object.freeze([
   'RATE_LIMITED',
   'NETWORK_ERROR',
+  // 图床失败多为临时性的（网络抖动 / 限流），可重试；
+  // 凭据类失败由图床侧单独判为不可重试，此处不区分。
+  'IMAGEHOST_UPLOAD_FAILED',
   'PARSE_ERROR',
   'TIMEOUT',
   'FORBIDDEN',

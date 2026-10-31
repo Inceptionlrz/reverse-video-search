@@ -17,6 +17,58 @@ export function isPublicHttpUrl(value) {
   }
 }
 
+/**
+ * 判定 manual 态最终对外呈现的错误码与文案。
+ *
+ * 为什么必须分开「引擎侧错误」和「图床侧错误」：
+ * 两者曾混在同一个 lastError 里，于是出现日志自相矛盾的降级结论——
+ *   · Yandex/Bing 走桥接，图床传不上去被记成 NETWORK_ERROR，
+ *     界面报「引擎网络异常」，但真实要查的是图床；
+ *   · Google 不走桥接，图床失败没有进 lastError，末级落到兜底码，
+ *     于是末条日志写着"GitHub 上传失败"、结论却写"Google HTTP 取不到"，对不上。
+ *
+ * 归类优先级：引擎的实测结论 > 图床失败 > 兜底。
+ * 因为引擎结论是**主因**（图床修好了它也照样取不到），
+ * 图床失败只决定"有没有可复制的直链"，属次要信息，但要写出来，否则用户不知道为何没有直链。
+ */
+export function classifyManualOutcome({ engineError, imagehostError, provider } = {}) {
+  const notes = provider?.notes || '所有自动方式均不可用';
+  const hostFail = imagehostError
+    ? `图床上传失败（${imagehostError.errorMessage || imagehostError.errorCode || '未知原因'}）`
+    : null;
+
+  // (a) 引擎自己给了实测结论 —— 引擎是主因，图床情况作为补充
+  if (engineError?.errorCode) {
+    return {
+      code: engineError.errorCode,
+      message: hostFail
+        ? `${engineError.errorMessage || notes}；同时${hostFail}，因此没有可复制的图片直链`
+        : (engineError.errorMessage || notes),
+    };
+  }
+
+  // (b) 引擎的自动路径**实测不可用**（如 Google：deeplink 与 bridge 都标 unavailable）。
+  // 这种引擎图床修好了也照样取不到，所以结论必须是引擎的，不能让图床错误盖掉。
+  // 判据用 availability 而不是"有没有 buildManualDeeplink"：Yandex 也有手动深链，
+  // 但它的自动路径只是未验证（unverified），并非不可用，此时图床才是主因。
+  const autoPathUnavailable = provider?.availability?.bridge === 'unavailable'
+    || provider?.availability?.deeplink === 'unavailable';
+  if (autoPathUnavailable) {
+    return {
+      code: 'ENGINE_NO_HTTP_RESULT',
+      message: hostFail ? `${notes}；${hostFail}，因此没有可复制的图片直链` : notes,
+    };
+  }
+
+  // (c) 只有图床失败：桥接是当时唯一的自动路径，它就是主因
+  if (imagehostError) {
+    return { code: 'IMAGEHOST_UPLOAD_FAILED', message: hostFail };
+  }
+
+  // (d) 兜底：引擎 HTTP 层取不到结果
+  return { code: 'ENGINE_NO_HTTP_RESULT', message: notes };
+}
+
 export function createExecutor(deps) {
   const {
     tasksRepo, framesRepo, analysesRepo, engineHealthRepo,
@@ -138,7 +190,10 @@ export function createExecutor(deps) {
     const ctx = { cfg, providerId: provider.id, metrics, cancelToken: cancelTokens.get(task.id) || null };
     const log = [];
     const engineModes = settings.engines[provider.id] || {};
-    let lastError = null;
+    // 引擎侧与图床侧的错误分开存：混在 lastError 里会让末级结论与日志对不上
+    //（详见 classifyManualOutcome 的注释）。
+    let engineError = null;
+    let imagehostError = null;
 
     await analysesRepo.update(analysisId, { status: 'running', started_ms: Date.now(), attempt_mode: null, error_code: null, error_message: null });
 
@@ -167,7 +222,7 @@ export function createExecutor(deps) {
         if (res.ok && res.items?.length) {
           return succeed(analysisId, { provider, frame, task, items: res.items, attemptMode: 'upload', hitSource: 'engine_upload', requestUrl: res.requestUrl ?? null, httpStatus: res.httpStatus ?? null, latencyMs: res.latencyMs ?? null, log });
         }
-        lastError = res;
+        engineError = res;
       } else {
         log.push({ step: 'upload', skipped: true, reason: 'multipart 直传默认关闭（实验性，未验证端点）' });
       }
@@ -184,7 +239,7 @@ export function createExecutor(deps) {
           await health.recordSuccess(provider.id);
           return finishZero(analysisId, 'deeplink', log);
         }
-        lastError = res;
+        engineError = res;
       } else {
         const reason = !publicUrl
           ? '本地帧对公网引擎不可达（无公网图片 URL）'
@@ -219,9 +274,10 @@ export function createExecutor(deps) {
             await health.recordSuccess(provider.id);
             return finishZero(analysisId, 'bridge', log);
           }
-          lastError = res;
+          engineError = res;
         } else {
-          lastError = up;
+          // 桥接失败发生在图床上传环节，不是引擎请求环节
+          imagehostError = up;
         }
       } else {
         const reason = !settings.imagehost.enabled
@@ -253,6 +309,11 @@ export function createExecutor(deps) {
           manualImageUrl = up.url;
           const dl = provider.buildManualDeeplink(up.url);
           if (dl) manualUrl = dl;
+        } else {
+          // 图床失败要记下来：它是"手动入口没有可复制直链"的直接原因。
+          // 曾在此处只写日志不落错误，于是 Google 的末级结论落到兜底码，
+          // 出现「末条日志=GitHub 上传失败 / 结论=Google HTTP 取不到」的自相矛盾。
+          imagehostError = imagehostError ?? up;
         }
       } else if (manualDeeplinkSupported) {
         log.push({
@@ -265,13 +326,12 @@ export function createExecutor(deps) {
       }
 
       // [4] manual：最后一级的错误码上抛，永不为空
-      const finalCode = lastError?.errorCode || 'ENGINE_NO_HTTP_RESULT';
-      await health.recordFailure(provider.id, finalCode);
+      // 引擎实测结论优先于图床失败，因为前者是主因（图床修好它也照样取不到）。
+      const outcome = classifyManualOutcome({ engineError, imagehostError, provider });
+      await health.recordFailure(provider.id, outcome.code);
       await markManual(analysisId, {
-        code: finalCode,
-        // 默认文案曾写「所有自动方式均不可用」，对 Google 是误导：
-        // 它不是"暂时不可用"，而是实测 HTTP 层取不到结果。用 provider 自己的结论。
-        message: lastError?.errorMessage || provider.notes || '所有自动方式均不可用',
+        code: outcome.code,
+        message: outcome.message,
         log,
         provider,
         frame,

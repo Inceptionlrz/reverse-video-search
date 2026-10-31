@@ -148,6 +148,9 @@ export const ERROR_COPY = {
   CONFLICT: '状态冲突',
   CAPTCHA: '需要人机验证',
   UPLOAD_REJECTED: '图床拒绝上传',
+  // 与 NETWORK_ERROR 分开：失败在图床上传环节，不是引擎请求环节。
+  // 写成"网络不可达"会让人去查引擎连通性，而真实要查的是图床凭据/网络/配额。
+  IMAGEHOST_UPLOAD_FAILED: '图床上传失败，桥接不可用',
   PARSE_ERROR: '页面结构无法解析',
   ENGINE_NO_HTTP_RESULT: '引擎结果需浏览器渲染，HTTP 层取不到',
   HTTP_ERROR: 'HTTP 返回异常',
