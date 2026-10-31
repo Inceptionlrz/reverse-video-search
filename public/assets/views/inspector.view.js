@@ -4,7 +4,7 @@ import {
   fmtDuration, fmtDateTime, fmtLatency, fmtScore, fmtSim, engineLabel, errorText,
   analysisStatusText, ENGINE_AGG,
 } from '../format.js';
-import { degradationLog, scoreSourceTag, copyWithToast } from './shared.view.js';
+import { degradationLog, scoreSourceTag, copyWithToast, manualCopyTargets } from './shared.view.js';
 import { frameEngineMatrix } from './frames-col.view.js';
 
 function kv(k, v, { mono = true } = {}) {
@@ -52,9 +52,33 @@ export function frameInspector({ frame, analyses, engines }) {
 /** 手动检索入口：manual 态的平等出口（信息态，不是错误态）。 */
 export function manualActions(analysis) {
   const url = safeHttpUrl(analysis.manual_url);
+  // 图床的纯图片直链。用户反馈「点了复制却拿到本地路径」——
+  // 手动入口必须能复制可贴进引擎"粘贴图片链接"框的公网 URL，
+  // 而此前这个直链没落库，界面上只有本地磁盘路径可复制。
+  const { link: imgUrl, path: localPath } = manualCopyTargets(analysis);
+  const log = Array.isArray(analysis.degradation_log) ? analysis.degradation_log : [];
+  // 带图深链 vs 普通上传页：前者点开即是结果页，后者还得自己传文件，文案必须区分。
+  const deepLinked = log.some((r) => r.step === 'manual_deeplink' && r.ok);
   return h('div', { class: 'row row--wrap', style: { marginTop: 'var(--space-2)' } },
-    url ? h('a', { class: 'btn btn--secondary btn--sm', href: url, target: '_blank', rel: 'noreferrer noopener' }, icon('external-link', 14), '打开发引擎上传页') : null,
-    h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => copyWithToast(analysis.manual_path || analysis.frame_id || '', '帧路径') }, icon('copy', 14), '复制帧路径'));
+    url
+      ? h('a', {
+        class: 'btn btn--secondary btn--sm',
+        href: url, target: '_blank', rel: 'noreferrer noopener',
+        title: deepLinked ? '链接已带这张帧，浏览器打开即是结果页' : '需自行把帧传上去',
+      }, icon('external-link', 14), deepLinked ? '在浏览器打开结果页' : '打开发引擎上传页')
+      : null,
+    imgUrl
+      ? h('button', {
+        class: 'btn btn--primary btn--sm', type: 'button',
+        title: '公网图片直链，可贴进引擎的「粘贴图片链接」框',
+        onclick: () => copyWithToast(imgUrl, '图片链接'),
+      }, icon('copy', 14), '复制图片链接')
+      : null,
+    h('button', {
+      class: 'btn btn--ghost btn--sm', type: 'button',
+      title: '本机磁盘路径，仅在你能直接访问该机器时有用',
+      onclick: () => copyWithToast(localPath, '本地帧路径'),
+    }, icon('copy', 14), '复制本地路径'));
 }
 
 /** 结果详情：双轨分数 + 证据链（哪帧、哪个引擎、第几位）。 */

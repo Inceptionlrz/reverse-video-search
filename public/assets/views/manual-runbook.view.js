@@ -1,21 +1,23 @@
 // manual-runbook.view.js — 手动跑腿工作台。
 //
-// 为什么需要它：Google Lens 的自动链路走不通——它的结果页是纯 JS 应用外壳
-// （实测：POST /v3/upload → 303 → 结果页 title="Google Search"，AF_initDataCallback
-// 0 命中、/url?q= 0 命中，数据全部由客户端 JS 渲染，HTTP 层抓不到。带 cookie jar
-// 复测过，结论不变，证据见 scripts/probe/18-lens-cookie.mjs 与 out-H-*.html）。
-// 这一路只能由人把帧贴到引擎上传页。既然必须手动，就把手动的成本压到最低：
-//   - 「复制帧图片」：把帧写进系统剪贴板，到 Lens 上传页按 Ctrl+V 即可，
-//     不必开文件对话框逐层找文件；
+// 为什么需要它：部分引擎（Google、Yandex）的结果页由浏览器 JS 渲染，
+// 本机 HTTP 层拿不到数据（5 个端点复测，见 scripts/probe/24-lens-recheck.mjs）。
+// 这一路只能由人在浏览器里完成，所以把手动成本压到最低：
+//   - 「复制链接」：图床的公网图片直链，贴进引擎的「粘贴图片链接」框即可；
+//   - 「打开结果页」：已带图片的深链，点开即是结果页（省掉上传这一步）；
+//   - 「复制帧图片」：把帧字节写进系统剪贴板，到上传页按 Ctrl+V；
 //   - 「拖到引擎页」：缩略图可直接拖到引擎上传区，是真实的 File 拖放而非文本；
 //   - 一屏聚合所有待手动组合、按帧分组，不用逐个翻条目。
 //
-// 能力边界（如实说明，不夸大）：本环境没有浏览器，粘贴与拖放到 lens.google.com
-// 的兼容性**未经实测**。两条路都提供，任一生效即可显著省事；都不生效时退回
-// 「复制帧路径」手动选择文件。
+// ⚠️ 已修的坑：这里曾只有「复制帧路径」（本机磁盘路径），用户点了以为拿到的是
+// 图片链接。现在公网直链与本地路径是两个按钮，文案各自写明。
+//
+// 能力边界（如实说明，不夸大）：粘贴与拖放到引擎上传页的兼容性**未经实测**；
+// Google 侧还可能因出口 IP 被判异常流量而跳 /sorry（实测遇到过）。
+// 多条路都提供，任一生效即可；都不生效时退回「复制本地路径」手动选择文件。
 import { h, icon, toast, modal, safeHttpUrl } from '../dom.js';
 import { fmtDuration, engineLabel } from '../format.js';
-import { copyWithToast } from './shared.view.js';
+import { copyWithToast, manualCopyTargets } from './shared.view.js';
 
 /** 帧图缓存：previewUrl -> File。拖放必须在 dragstart 里同步交出 File，来不及临时 fetch。 */
 const fileCache = new Map();
@@ -73,20 +75,35 @@ function makeDraggable(node, previewUrl, fileName) {
 /** 单个「帧 × 引擎」组合的操作簇。 */
 function manualRow(analysis, frame) {
   const url = safeHttpUrl(analysis.manual_url);
+  // 图床纯直链：可贴进引擎的「粘贴图片链接」框。
+  // 曾只有「复制帧路径」（本机磁盘路径），用户点了以为拿到的是链接。
+  const { link: imgUrl, path: localPath } = manualCopyTargets(analysis);
   const previewUrl = frame?.preview_url || null;
   const fileName = frame?.file_name || `frame-${analysis.frame_id}.jpg`;
+  const log = Array.isArray(analysis.degradation_log) ? analysis.degradation_log : [];
+  const deepLinked = log.some((r) => r.step === 'manual_deeplink' && r.ok);
   return h('div', { class: 'consent-row' },
     icon('hand', 14, 'muted'),
     h('span', { class: 'grow', text: engineLabel(analysis.provider) }),
-    url ? h('a', { class: 'btn btn--secondary btn--sm', href: url, target: '_blank', rel: 'noreferrer noopener' }, icon('external-link', 14), '打开发引擎上传页') : null,
-    previewUrl ? h('button', {
+    url ? h('a', {
+      class: 'btn btn--secondary btn--sm',
+      href: url, target: '_blank', rel: 'noreferrer noopener',
+      title: deepLinked ? '链接已带这张帧，浏览器打开即是结果页' : '需自行把帧传上去',
+    }, icon('external-link', 14), deepLinked ? '打开结果页' : '打开上传页') : null,
+    imgUrl ? h('button', {
       class: 'btn btn--primary btn--sm', type: 'button',
+      title: '公网图片直链，可贴进引擎的「粘贴图片链接」框',
+      onclick: () => copyWithToast(imgUrl, '图片链接'),
+    }, icon('copy', 14), '复制链接') : null,
+    previewUrl ? h('button', {
+      class: 'btn btn--ghost btn--sm', type: 'button',
       onclick: () => copyFrameImage(previewUrl, fileName, `第 ${frame?.seq ?? '?'} 帧`),
     }, icon('copy', 14), '复制帧图片') : null,
     h('button', {
       class: 'btn btn--ghost btn--sm', type: 'button',
-      onclick: () => copyWithToast(analysis.manual_path || '', '帧路径'),
-    }, icon('copy', 14), '复制帧路径'));
+      title: '本机磁盘路径，仅在你能直接访问该机器时有用',
+      onclick: () => copyWithToast(localPath, '本地帧路径'),
+    }, icon('copy', 14), '复制本地路径'));
 }
 
 /**
@@ -138,13 +155,13 @@ export function openManualRunbook({ analyses, frames = [] }) {
     dismissable: true,
     body: [
       h('div', { class: 'consent-ack' }, icon('info', 14),
-        h('span', { text: 'Google Lens 的结果页由浏览器 JS 渲染，本机 HTTP 层拿不到（实测过，见 scripts/probe/18-lens-cookie.mjs）——所以这一路只能手动。用「复制帧图片」省掉找文件：点一下，切到引擎上传页按 Ctrl+V。' })),
+        h('span', { text: '这些引擎的结果页由浏览器 JS 渲染，本机 HTTP 层拿不到（5 个端点复测，见 scripts/probe/24-lens-recheck.mjs）。但帧已经传到图床，所以不必再手动传文件：「复制链接」贴进引擎的「粘贴图片链接」框，或直接「打开结果页」。' })),
       groups.length
         ? h('div', { class: 'stack' }, ...groups)
         : h('p', { class: 'muted', text: '当前没有待手动的组合。' }),
     ],
     actions: [
-      allPaths ? h('button', { class: 'btn btn--ghost', type: 'button', onclick: () => copyWithToast(allPaths, '全部帧路径') }, icon('copy', 14), '复制全部帧路径') : null,
+      allPaths ? h('button', { class: 'btn btn--ghost', type: 'button', onclick: () => copyWithToast(allPaths, '全部帧路径') }, icon('copy', 14), '复制全部本地路径') : null,
       h('button', { class: 'btn btn--secondary', type: 'button', onclick: () => ui.close() }, '知道了'),
     ].filter(Boolean),
   });

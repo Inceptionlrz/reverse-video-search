@@ -9,6 +9,8 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { installDomStub, stubFindAll, stubText } from './helpers.mjs';
 import { openManualRunbook } from '../public/assets/views/manual-runbook.view.js';
+import { manualCopyTargets } from '../public/assets/views/shared.view.js';
+
 
 const FRAMES = [
   { id: 'f1', seq: 1, time_ms: 1000, enabled: true, file_name: 'f1.jpg', preview_url: '/frames/t1/f1.jpg' },
@@ -47,7 +49,7 @@ describe('手动跑腿工作台', () => {
     }
   });
 
-  test('R2：每个组合都要有省事的出口——复制帧图片 / 打开发引擎页 / 复制帧路径', () => {
+  test('R2：每个组合都要有省事的出口——复制图片链接 / 打开上传页 / 复制本地路径', () => {
     const uninstall = installDomStub();
     try {
       openManualRunbook({ analyses: ANALYSES, frames: FRAMES });
@@ -59,12 +61,63 @@ describe('手动跑腿工作台', () => {
       assert.equal(rows.length, 3, `共 3 个待手动组合，实测 ${rows.length}`);
 
       // 有 manual_url 的组合必须给上传页入口
-      assert.ok(rows.some((r) => /打开发引擎上传页/.test(r)), '至少一个组合应有上传页入口');
+      assert.ok(rows.some((r) => /打开上传页|打开结果页/.test(r)), '至少一个组合应有上传页入口');
       // 有 preview_url 的组合必须给剪贴板出口——这是把「手动」变便宜的关键
       const withCopy = rows.filter((r) => /复制帧图片/.test(r));
       assert.equal(withCopy.length, 3, '三个组合都有 preview_url，都应提供复制帧图片');
-      // 复制路径始终兜底
-      assert.equal(rows.filter((r) => /复制帧路径/.test(r)).length, 3, '复制帧路径应始终可用作兜底');
+      // 复制本地路径始终兜底。
+      // 文案必须写明是"本地"：曾叫「复制帧路径」，用户点了以为拿到的是图片链接。
+      assert.equal(rows.filter((r) => /复制本地路径/.test(r)).length, 3, '复制本地路径应始终可用作兜底');
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('R2b：复制链接必须给公网直链，绝不能给本机磁盘路径', () => {
+    // 用户反馈：点了复制却拿到 D:\...\001_0.jpg 这种本机磁盘路径。
+    // 取值走 manualCopyTargets 这个纯函数（按钮是 DOM 事件绑定的，
+    // stub 的 addEventListener 是 no-op，点不到），因此这里能真正钉住内容。
+    // 需要 DOM stub：safeHttpUrl 要用 location.origin 解析 URL。
+    const uninstall = installDomStub();
+    try {
+      const PUBLIC_URL = 'https://raw.githubusercontent.com/o/r/frames/2026-10-30/f1.jpg';
+      const t = manualCopyTargets({
+        manual_path: 'D:/frames/f1.jpg',
+        request_url: PUBLIC_URL,
+      });
+      assert.equal(t.link, PUBLIC_URL, 'link 应是图床公网直链');
+      assert.equal(t.path, 'D:/frames/f1.jpg', 'path 才是本机路径');
+      assert.notEqual(t.link, t.path, '两者绝不能是同一个值——否则用户拿到的还是本地路径');
+      assert.ok(!String(t.link || '').includes('D:/'), 'link 里不得掺进本机磁盘路径');
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('R2c：没有图床直链时 link 为 null（界面据此不显示复制链接按钮）', () => {
+    assert.equal(manualCopyTargets({ manual_path: 'D:/f.jpg', request_url: null }).link, null);
+    assert.equal(manualCopyTargets({}).link, null);
+    assert.equal(manualCopyTargets({}).path, '', '什么都没有时 path 为空串，不写 undefined 进剪贴板');
+  });
+
+  test('R2d：工作台在有直链时确实渲染出「复制链接」按钮', () => {
+    const uninstall = installDomStub();
+    try {
+      const PUBLIC_URL = 'https://raw.githubusercontent.com/o/r/frames/2026-10-30/f1.jpg';
+      openManualRunbook({
+        analyses: [{
+          id: 'a1', frame_id: 'f1', frame_seq: 1, provider: 'google_lens', status: 'manual',
+          manual_path: 'D:/frames/f1.jpg',
+          manual_url: `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(PUBLIC_URL)}`,
+          request_url: PUBLIC_URL,
+          degradation_log: [{ step: 'manual_deeplink', ok: true }],
+        }],
+        frames: FRAMES,
+      });
+      const groups = stubFindAll(document.body, 'runbook__group');
+      const text = stubText(groups[0]);
+      assert.match(text, /复制链接/, '有公网直链时应出现复制链接按钮');
+      assert.match(text, /打开结果页/, 'manual_deeplink 成功时文案应说明打开的是结果页');
     } finally {
       uninstall();
     }
@@ -81,7 +134,8 @@ describe('手动跑腿工作台', () => {
       assert.equal(groups.length, 1);
       const text = stubText(groups[0]);
       assert.ok(!/复制帧图片/.test(text), '拿不到帧图时不能给复制图片按钮（点了只会报错）');
-      assert.match(text, /复制帧路径/, '应退回复制路径');
+      // 文案必须写明是"本地"：曾叫「复制帧路径」，用户以为那是图片链接。
+      assert.match(text, /复制本地路径/, '应退回复制本地路径');
     } finally {
       uninstall();
     }

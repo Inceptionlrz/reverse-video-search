@@ -38,7 +38,7 @@ export function createExecutor(deps) {
     await analysesRepo.update(analysisId, { finished_ms: Date.now(), ...patch });
   }
 
-  async function markManual(analysisId, { code, message, log, provider, frame, manualUrl }) {
+  async function markManual(analysisId, { code, message, log, provider, frame, manualUrl, publicUrl }) {
     await finish(analysisId, {
       status: 'manual',
       error_code: code || 'PARSE_ERROR',
@@ -46,6 +46,10 @@ export function createExecutor(deps) {
       manual_path: frame?.file_path ?? null,
       // manualUrl 可能是"已带图片"的深链（省掉手动上传），缺省才回落到上传页。
       manual_url: manualUrl ?? provider?.entryUrl ?? null,
+      // 图床的**纯图片直链**。用户反馈"点了复制却拿到本地路径"：
+      // 手动入口要能复制可粘贴进引擎"粘贴图片链接"框的公网 URL，
+      // 而之前这个直链只存在于 bridge 的局部变量里，落库即丢失。
+      request_url: publicUrl ?? null,
       degradation_log: JSON.stringify(log),
     });
     logger.info('analysis', 'manual', `已降级为手工模式：${message}`, { analysis_id: analysisId, provider: provider?.id });
@@ -199,8 +203,12 @@ export function createExecutor(deps) {
         ? (consent?.imagehost || settings.imagehost.provider)
         : null;
       const bridgeAllowed = Boolean(hostId) && Boolean(consent?.bridge) && provider.availability.bridge !== 'unavailable';
+      // 上传结果存下来，[3.5] 要复用：同一帧不该因为"要再生成个手动链接"就传第二次。
+      // 曾两次调用 runBridge，日志里出现两条 bridge、实际外发两次。
+      let bridgeUpload = null;
       if (bridgeAllowed) {
-        const up = await runBridge(ctx, hostId, frame, analysisId, log);
+        bridgeUpload = await runBridge(ctx, hostId, frame, analysisId, log);
+        const up = bridgeUpload;
         if (up.ok) {
           const res = await provider.searchByDeeplink(ctx, up.url);
           log.push({ step: 'bridge_deeplink', ok: res.ok, code: res.errorCode ?? null, message: res.errorMessage ?? null, url: res.requestUrl ?? up.url });
@@ -231,12 +239,18 @@ export function createExecutor(deps) {
       // 省掉"自己把帧文件拖进上传页"这一步——这是这类引擎目前唯一能省的动作。
       // 仍然走同一份桥接授权：把帧传到图床是实打实的外发，不能因为"只是手动"就绕过。
       let manualUrl = provider.entryUrl ?? null;
+      // 图床纯直链：留给「复制图片链接」，用户可贴进引擎的"粘贴图片链接"框。
+      // 不能叫 publicUrl——上面 deeplink 步骤已有一个同名变量（那是"任务自带的公网 URL"，
+      // 与"为手动入口临时上传得到的直链"不是一回事）。
+      let manualImageUrl = null;
       const manualDeeplinkSupported = typeof provider.buildManualDeeplink === 'function'
         && Boolean(provider.buildManualDeeplink('https://example.invalid/x.jpg'));
       if (manualDeeplinkSupported && hostId && consent?.bridge) {
-        const up = await runBridge(ctx, hostId, frame, analysisId, log);
+        // 复用 [3] 的上传结果（成败都复用）：同一帧只该传一次图床。
+        const up = bridgeUpload ?? await runBridge(ctx, hostId, frame, analysisId, log);
         log.push({ step: 'manual_deeplink', ok: up.ok, code: up.errorCode ?? null, message: up.errorMessage ?? null, imagehost: hostId });
         if (up.ok) {
+          manualImageUrl = up.url;
           const dl = provider.buildManualDeeplink(up.url);
           if (dl) manualUrl = dl;
         }
@@ -262,6 +276,7 @@ export function createExecutor(deps) {
         provider,
         frame,
         manualUrl,
+        publicUrl: manualImageUrl,
       });
       return { status: 'manual' };
     } catch (err) {

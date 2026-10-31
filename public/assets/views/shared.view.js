@@ -327,6 +327,24 @@ export function exportModal({ taskId, filters = {} }) {
   return ui;
 }
 
+/**
+ * 手动入口可复制的两个目标。
+ *
+ * 抽成纯函数是为了可测：用户曾点了"复制"却拿到本机磁盘路径（以为那是图片链接）。
+ * 按钮是 DOM 事件绑定的，测试里触发不到（stub 的 addEventListener 是 no-op），
+ * 不抽出来就只能写"源码里有没有这行"的假断言。
+ * 顺带统一取值：检查器与工作台两处各写一份迟早会漂移。
+ *
+ * - link：图床的公网图片直链，可贴进引擎的「粘贴图片链接」框
+ * - path：本机磁盘路径，只在能直接访问这台机器时有用（兜底）
+ */
+export function manualCopyTargets(analysis) {
+  return {
+    link: safeHttpUrl(analysis?.request_url),
+    path: analysis?.manual_path || analysis?.frame_id || '',
+  };
+}
+
 /** 复制到剪贴板 + 轻提示。 */
 export async function copyWithToast(text, label = '内容') {
   const ok = await copyText(text);

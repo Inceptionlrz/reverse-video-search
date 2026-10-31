@@ -115,10 +115,20 @@ describe('E2E 预备 B：多编码器兼容（VP9 / HEVC 走完整抽帧路径�
     if (shared.tmp) fs.rmSync(shared.tmp, { recursive: true, force: true });
   });
 
+  // ⚠️ t.skip() 的返回值是 undefined，不能 `return t.skip(...)` 再靠调用方
+  // `if (skipped) return`——那样守卫永远不成立，skip 之后代码照跑，
+  // 而此时 fixtures 是空的（ffmpeg 都没有），于是抛
+  // "Cannot read properties of undefined (reading 'file')"，把跳过变成失败。
   function skipIfUnavailable(t, spec) {
-    if (!caps.ffmpeg) return t.skip('跳过：本地 ffmpeg 不可用');
-    if (!caps[spec.key]) return t.skip(`跳过：编码器不可用（${spec.label} 未编译进本地 ffmpeg）`);
-    return null;
+    if (!caps.ffmpeg) {
+      t.skip('跳过：本地 ffmpeg 不可用');
+      return true;
+    }
+    if (!caps[spec.key]) {
+      t.skip(`跳过：编码器不可用（${spec.label} 未编译进本地 ffmpeg）`);
+      return true;
+    }
+    return false;
   }
 
   // 建任务 + 抽帧 + 各模式共用的一套断言。
